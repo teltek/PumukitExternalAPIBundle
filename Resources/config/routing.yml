@@ -1,0 +1,4 @@
+pumukit_external_api:
+    resource: "@PumukitExternalAPIBundle/Controller/"
+    type:     annotation
+    prefix:   /
