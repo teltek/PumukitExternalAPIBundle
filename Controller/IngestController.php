@@ -9,17 +9,15 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 
 /**
- * @Route("/api")
+ * @Route("/api/ingest")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
 class IngestController extends Controller
 {
-    private $dm = null;
-
     /**
      * @Route("/createMediaPackage", methods="POST")
      */
-    public function indexAction(Request $request)
+    public function createMediaPackageAction(Request $request)
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $dm = $this->get('doctrine_mongodb')->getManager();

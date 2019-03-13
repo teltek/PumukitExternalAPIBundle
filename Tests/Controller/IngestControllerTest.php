@@ -44,17 +44,17 @@ class IngestControllerTest extends WebTestCase
         return $client;
     }
 
-    public function testIndex()
+    public function testCreateMediaPackage()
     {
         $client = static::createClient();
 
-        $client->request('GET', '/api/createMediaPackage');
+        $client->request('GET', '/api/ingest/createMediaPackage');
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
-        $client->request('POST', '/api/createMediaPackage');
+        $client->request('POST', '/api/ingest/createMediaPackage');
         $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
 
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/createMediaPackage');
+        $client->request('POST', '/api/ingest/createMediaPackage');
         $createdAt = new \DateTime();
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
