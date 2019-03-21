@@ -4,6 +4,7 @@ namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\Cookie;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -17,7 +18,8 @@ class IngestControllerTest extends WebTestCase
     {
         $options = array('environment' => 'test');
         static::bootKernel($options);
-        $this->dm = static::$kernel->getContainer()
+        $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
+            $this->dm = static::$kernel->getContainer()
             ->get('doctrine_mongodb')->getManager();
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
             ->remove(array());
@@ -28,6 +30,7 @@ class IngestControllerTest extends WebTestCase
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
             ->remove(array());
         $this->dm->close();
+        $this->jobService = null;
         gc_collect_cycles();
         parent::tearDown();
     }
@@ -128,5 +131,52 @@ class IngestControllerTest extends WebTestCase
         $subtitleFile = new UploadedFile($localFile, $localFile);
         fclose($fp);
         return $subtitleFile;
+    }
+
+    public function testAddTrack()
+    {
+        # Set up
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', '/api/ingest/createMediaPackage');
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        # Test without params
+        $client->request('POST', '/api/ingest/addTrack');
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+
+        # Test with valid params (still should fail)
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+            'flavor' => 'presentation/source',
+        );
+        $client->request('POST', '/api/ingest/addTrack', $postParams);
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+
+        # Test sending bad media track file
+        $badFile = $this->generateSubtitleFile();
+        $client->request('POST', '/api/ingest/addTrack', $postParams, array('data' => $badFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(500, $client->getResponse()->getStatusCode());
+
+        # Test sending correct media track file
+        $trackFile = $this->generateTrackFile();
+        $client->request('POST', '/api/ingest/addTrack', $postParams, array('data' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertTrue($mmobj instanceof MultimediaObject);
+        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($mmobj->getId());
+        $this->assertEquals(1, count($jobs)); # TODO: I don't want to wait for the job to finish executing to test the track metadata
+    }
+
+    protected function generateTrackFile()
+    {
+        // $finder = new Finder();
+        // $finder->files()->in(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/');
+        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
+        $localFile = 'presenter.mp4';
+        $uploadFile = 'upload.mp4';
+        copy($filesDir.$localFile, $uploadFile);
+        $trackFile = new UploadedFile($uploadFile, $localFile);
+        return $trackFile;
     }
 }

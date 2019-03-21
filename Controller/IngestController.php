@@ -76,4 +76,46 @@ class IngestController extends Controller
         }
         return new Response($xml->asXML(), 200, array('Content-Type' => 'text/xml'));
     }
+
+    /**
+     * @Route("/addTrack", methods="POST")
+     */
+    public function addTrackAction(Request $request)
+    {
+        $mediapackage = $request->request->get('mediaPackage');
+        if(!$mediapackage) {
+            return new Response("No 'mediaPackage' parameter", 400);
+        }
+        $flavor = $request->request->get('flavor');
+        if(!$flavor) {
+            return new Response("No 'flavor' parameter", 400);
+        }
+
+        $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
+        $dm = $this->get('doctrine_mongodb')->getManager();
+        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        if(!$multimediaObject) {
+            return new Response('The multimedia object with "id" "'.(string)$mediapackage['id'].'" cannot be found on the database', 404);
+        }
+
+        $jobService = $this->get('pumukitencoder.job');
+        if (!$request->files->has('data')) {
+            return new Response("No track file uploaded", 400);
+        }
+
+        $profile = $request->get('profile', 'master_copy');
+        $priority = $request->get('priority', 2);
+        $language = $request->get('language', 'en');
+        $description = $request->get('description', '');
+        // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
+        try {
+            $multimediaObject = $jobService->createTrackFromLocalHardDrive($multimediaObject, $request->files->get('data'), $profile, $priority, $language, $description);
+        } catch (\Exception $e) {
+            return new Response('Upload failed. The file is not a valid video or audio file.', 500);
+        }
+
+        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
+        $xml->addAttribute('id', $multimediaObject->getId(), null);
+        return new Response($xml->asXml(), 200);
+    }
 }
