@@ -5,6 +5,7 @@ namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 
@@ -24,6 +25,8 @@ class IngestControllerTest extends WebTestCase
 
     public function tearDown()
     {
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
+            ->remove(array());
         $this->dm->close();
         gc_collect_cycles();
         parent::tearDown();
@@ -69,5 +72,61 @@ class IngestControllerTest extends WebTestCase
         $this->assertEmpty((string) $mediapackage->metadata);
         $this->assertEmpty((string) $mediapackage->attachments);
         $this->assertEmpty((string) $mediapackage->publications);
+    }
+
+    public function testAddAttachment()
+    {
+        # Get valid mediapackage
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', '/api/ingest/createMediaPackage');
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        # Fails if no post parameters
+        $client->request('POST', '/api/ingest/addAttachment');
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+        );
+        # Still fails if no flavor set
+        $client->request('POST', '/api/ingest/addAttachment', $postParams);
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+
+        # We check success case and that attachment has been added
+        # File generation
+        $postParams['flavor'] = 'srt';
+        $subtitleFile = $this->generateSubtitleFile();
+        $client->request('POST', '/api/ingest/addAttachment', $postParams, array('data' => $subtitleFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertTrue($mmobj instanceof MultimediaObject);
+        $this->assertEquals(count($mmobj->getMaterials()), 1);
+        $this->assertEquals($mmobj->getMaterials()[0]->getMimeType(), $postParams['flavor']);
+        $this->assertEquals((string)$mediapackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
+        $this->assertNotEmpty($mediapackage->media);
+        $this->assertNotEmpty($mediapackage->metadata);
+        $this->assertNotEmpty($mediapackage->attachments);
+        $this->assertNotEmpty($mediapackage->publications);
+
+        # Request with invalid mediapackage
+        $mediapackage['id'] = 'invalid-id';
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+            'flavor' => 'attachment/srt',
+        );
+        $subtitleFile = $this->generateSubtitleFile();
+        $client->request('POST', '/api/ingest/addAttachment', $postParams, array('data' => $subtitleFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
+
+    }
+
+    protected function generateSubtitleFile()
+    {
+        $localFile = 'subtitles.srt';
+        $fp = fopen($localFile, 'wb');
+        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
+        $subtitleFile = new UploadedFile($localFile, $localFile);
+        fclose($fp);
+        return $subtitleFile;
     }
 }
