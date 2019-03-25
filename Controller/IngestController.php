@@ -7,7 +7,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+
 use Pumukit\SchemaBundle\Document\Material;
+use Pumukit\SchemaBundle\Document\MultimediaObject;
 
 /**
  * @Route("/api/ingest")
@@ -15,20 +17,39 @@ use Pumukit\SchemaBundle\Document\Material;
  */
 class IngestController extends Controller
 {
+    protected function generateXML(MultimediaObject $multimediaObject)
+    {
+        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
+        $xml->addAttribute('id', $multimediaObject->getId(), null);
+        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
+
+        foreach ($multimediaObject->getMaterials() as $material) {
+            $attachment = $xml->attachments->addChild('attachment');
+            $attachment->addAttribute('id', $material->getId());
+            $attachment->addChild('mimetype', $material->getMimeType());
+            $tags = $attachment->addChild('tags');
+            foreach ($material->getTags() as $tag) {
+                $tags->addChild('tag', $tag);
+            }
+            $attachment->addChild('url', '');
+            $attachment->addChild('size', '');
+        }
+
+        return $xml;
+    }
+
     /**
      * @Route("/createMediaPackage", methods="POST")
      */
     public function createMediaPackageAction(Request $request)
     {
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $dm = $this->get('doctrine_mongodb')->getManager();
         $factoryService = $this->get('pumukitschema.factory');
         $series = $factoryService->createSeries($this->getUser());
         $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
-        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
+        $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($xml->asXML(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -44,6 +65,11 @@ class IngestController extends Controller
         if (!$flavor) {
             return new Response("No 'flavor' parameter", 400);
         }
+
+        if (!$request->files->has('BODY')) {
+            return new Response('No attachment file', 400);
+        }
+
         try {
             $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
@@ -60,25 +86,10 @@ class IngestController extends Controller
             'mime_type' => $flavor,
         );
         $materialService = $this->get('pumukitschema.material');
-        if (!$request->files->get('BODY')) {
-            return new Response('No attachment file', 400);
-        }
         $multimediaObject = $materialService->addMaterialFile($multimediaObject, $request->files->get('BODY'), $materialMetadata);
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
-        foreach ($multimediaObject->getMaterials() as $material) {
-            $attachment = $xml->attachments->addChild('attachment');
-            $attachment->addAttribute('id', $material->getId());
-            $attachment->addChild('mimetype', $material->getMimeType());
-            $tags = $attachment->addChild('tags');
-            foreach ($material->getTags() as $tag) {
-                $tags->addChild('tag', $tag);
-            }
-            $attachment->addChild('url', '');
-            $attachment->addChild('size', '');
-        }
+        $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($xml->asXML(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -95,6 +106,10 @@ class IngestController extends Controller
             return new Response("No 'flavor' parameter", 400);
         }
 
+        if (!$request->files->has('BODY')) {
+            return new Response('No track file uploaded', 400);
+        }
+
         try {
             $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
@@ -106,9 +121,6 @@ class IngestController extends Controller
             return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', 404);
         }
 
-        if (!$request->files->has('BODY')) {
-            return new Response('No track file uploaded', 400);
-        }
 
         $profile = $request->get('profile', 'master_copy');
         $priority = $request->get('priority', 2);
@@ -122,10 +134,9 @@ class IngestController extends Controller
             return new Response('Upload failed. The file is not a valid video or audio file.', 500);
         }
 
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
+        $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($xml->asXml(), 200);
+        return new Response($mediaPackage->asXml(), 200, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -208,6 +219,8 @@ class IngestController extends Controller
             $dm->flush();
         }
 
-        return new Response('OK', 200);
+        $mediaPackage = $this->generateXML($multimediaObject);
+
+        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
     }
 }
