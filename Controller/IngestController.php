@@ -214,7 +214,9 @@ class IngestController extends Controller
             $dm->flush();
         } elseif (strpos($flavor, 'dublincore/episode') === 0) {
             $newTitle = (string) $catalogDcterms->title;
-            $multimediaObject->setTitle($newTitle);
+            foreach($multimediaObject->getI18nTitle() as $language => $title){
+                $multimediaObject->setTitle($newTitle, $language);
+            }
             $dm->persist($multimediaObject);
             $dm->flush();
         }

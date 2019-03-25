@@ -244,11 +244,14 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
 
         // Test reassigning to an existing series
-        //dump($seriesCatalogDcterms);
-        //$seriesCatalogDcterms['identifier']->Unit = 'caca';
-        //dump($seriesCatalogDcterms);
-        //dump($seriesCatalog->asXml());
-        //$this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
+        $seriesCatalogDcterms->identifier = $originalSeries->getId();
+        file_put_contents($seriesFile, $seriesCatalog->asXml());
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->dm->refresh($mmobj);
+        $newSeries = $mmobj->getSeries();
+        $this->assertEquals($originalSeries->getId(), $newSeries->getId());
+        $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
 
         // Test assign episode.xml to change title
         $postParams = array(
@@ -260,6 +263,9 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
         $this->dm->refresh($mmobj);
         $this->assertEquals('Changed title', $mmobj->getTitle());
+        foreach($mmobj->getI18nTitle() as $language => $title){
+            $this->assertEquals('Changed title', $title);
+        }
     }
 
     protected function getUploadFile($localFile)
