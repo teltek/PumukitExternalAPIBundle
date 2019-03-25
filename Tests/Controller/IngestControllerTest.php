@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
+use Pumukit\SchemaBundle\Document\Series;
 
 class IngestControllerTest extends WebTestCase
 {
@@ -23,11 +24,15 @@ class IngestControllerTest extends WebTestCase
             ->get('doctrine_mongodb')->getManager();
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
             ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
+            ->remove(array());
     }
 
     public function tearDown()
     {
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
+            ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
             ->remove(array());
         $this->dm->close();
         $this->jobService = null;
@@ -178,5 +183,90 @@ class IngestControllerTest extends WebTestCase
         copy($filesDir.$localFile, $uploadFile);
         $trackFile = new UploadedFile($uploadFile, $localFile);
         return $trackFile;
+    }
+
+    public function testAddCatalog()
+    {
+        # Set up
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', '/api/ingest/createMediaPackage');
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        # Test without params
+        $client->request('POST', '/api/ingest/addCatalog');
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+    }
+
+    public function testAddDCCatalog()
+    {
+        # Set up
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', '/api/ingest/createMediaPackage');
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        # Test without params
+        $client->request('POST', '/api/ingest/addDCCatalog');
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+
+        # Test with valid params but wrong values (still should fail)
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+            'flavor' => 'random/catalog',
+        );
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams);
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+
+        # Test with valid params but wrong XML file
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+            'flavor' => 'dublincore/series',
+        );
+        $badFile = $this->generateSubtitleFile();
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $badFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(500, $client->getResponse()->getStatusCode());
+
+        # Add series catalog (creates new series);
+        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $originalSeries = $mmobj->getSeries();
+        $seriesFile = $this->getUploadFile('series.xml');
+        $seriesCatalog = simplexml_load_file($seriesFile, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        $namespacesMetadata = $seriesCatalog->getNamespaces(true);
+        $seriesCatalogDcterms = $seriesCatalog->children($namespacesMetadata['dcterms']);
+
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->dm->refresh($mmobj);
+        $newSeries = $mmobj->getSeries();
+        $this->assertTrue($newSeries instanceof Series);
+        $this->assertNotEquals($originalSeries->getId(), $newSeries->getId());
+        $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
+
+        # Test reassigning to an existing series
+        //dump($seriesCatalogDcterms);
+        //$seriesCatalogDcterms['identifier']->Unit = 'caca';
+        //dump($seriesCatalogDcterms);
+        //dump($seriesCatalog->asXml());
+        //$this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
+
+        # Test assign episode.xml to change title
+        $postParams = array(
+            'mediaPackage'=> $mediapackage->asXML(),
+            'flavor' => 'dublincore/episode',
+        );
+        $episodeFile = $this->getUploadFile('episode.xml');
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->dm->refresh($mmobj);
+        $this->assertEquals("Changed title", $mmobj->getTitle());
+    }
+
+    protected function getUploadFile($localFile)
+    {
+        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
+        $uploadFile = 'upload.xml';
+        copy($filesDir.$localFile, $uploadFile);
+        $seriesFile = new UploadedFile($uploadFile, $localFile);
+        return $seriesFile;
     }
 }

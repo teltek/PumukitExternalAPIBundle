@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dublincore xmlns="http://www.opencastproject.org/xsd/1.0/dublincore/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance/">
+    <dcterms:created>2018-10-17T14:00:44Z</dcterms:created>
+    <dcterms:temporal>start=2018-10-17T14:00:00Z; end=2018-10-17T14:05:00Z; scheme=W3C-DTF;</dcterms:temporal>
+    <dcterms:spatial>GCMobile-alfro-Z97P-D3</dcterms:spatial>
+    <dcterms:title>Changed title</dcterms:title>
+    <dcterms:identifier>a8c916b1-ea38-46e5-8912-d14338bc451e</dcterms:identifier>
+</dublincore>

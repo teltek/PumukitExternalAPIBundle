@@ -118,4 +118,87 @@ class IngestController extends Controller
         $xml->addAttribute('id', $multimediaObject->getId(), null);
         return new Response($xml->asXml(), 200);
     }
+
+    /**
+     * @Route("/addCatalog", methods="POST")
+     */
+    public function addCatalogAction(Request $request)
+    {
+        $mediapackage = $request->request->get('mediaPackage');
+        if(!$mediapackage) {
+            return new Response("No 'mediaPackage' parameter", 400);
+        }
+
+        $flavor = $request->request->get('flavor');
+        if(!$flavor) {
+            return new Response("No 'flavor' parameter", 400);
+        }
+
+        if (!$request->files->has('data')) {
+            return new Response("No catalog file uploaded", 400);
+        }
+
+        return new Response('OK', 200);
+    }
+
+    /**
+     * @Route("/addDCCatalog", methods="POST")
+     */
+    public function addDCCatalogAction(Request $request)
+    {
+        $mediapackage = $request->request->get('mediaPackage');
+        if(!$mediapackage) {
+            return new Response("No 'mediaPackage' parameter", 400);
+        }
+
+        $flavor = $request->request->get('flavor');
+        if(!$flavor) {
+            return new Response("No 'flavor' parameter", 400);
+        } else if(strpos($flavor, 'dublincore/') !== 0){
+            return new Response("Only 'dublincore' catalogs 'flavor' parameter", 400);
+        }
+
+        if (!$request->files->has('data')) {
+            return new Response("No catalog file uploaded", 400);
+        }
+
+        $catalog = $request->files->get('data');
+        //libxml_use_internal_errors(true);
+        try {
+            $catalog = simplexml_load_file($catalog, 'SimpleXMLElement', LIBXML_NOCDATA);
+        } catch (\Exception $e) {
+            return new Response($e->getMessage(), 500);
+        }
+
+        try {
+            $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
+        } catch (\Exception $e) {
+            return new Response($e->getMessage(), 500);
+        }
+        $dm = $this->get('doctrine_mongodb')->getManager();
+        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        if(!$multimediaObject) {
+            return new Response('The multimedia object with "id" "'.(string)$mediapackage['id'].'" cannot be found on the database', 404);
+        }
+
+        $namespacesMetadata = $catalog->getNamespaces(true);
+        $catalogDcterms = $catalog->children($namespacesMetadata['dcterms']);
+        if(strpos($flavor, 'dublincore/series') === 0){
+            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => (string) $catalogDcterms->identifier]);
+            if(!$series){
+                $factory = $this->get('pumukitschema.factory');
+                $series = $factory->createSeries($this->getUser());
+            }
+            $multimediaObject->setSeries($series);
+            $dm->persist($multimediaObject);
+            $dm->flush();
+        } else if(strpos($flavor, 'dublincore/episode') === 0){
+            $newTitle = (string) $catalogDcterms->title;
+            $multimediaObject->setTitle($newTitle);
+            $dm->persist($multimediaObject);
+            $dm->flush();
+        }
+
+        return new Response('OK', 200);
+    }
 }
