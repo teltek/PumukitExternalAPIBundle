@@ -7,9 +7,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-
 use Pumukit\SchemaBundle\Document\Material;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
+use Pumukit\SchemaBundle\Document\Person;
 
 /**
  * @Route("/api/ingest")
@@ -59,6 +59,8 @@ class IngestController extends Controller
     {
         $mediapackage = $request->request->get('mediaPackage');
         if (!$mediapackage) {
+            $multimediaObjectId = $request->request->get('id');
+
             return new Response("No 'mediaPackage' parameter", 400);
         }
         $flavor = $request->request->get('flavor');
@@ -120,7 +122,6 @@ class IngestController extends Controller
         if (!$multimediaObject) {
             return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', 404);
         }
-
 
         $profile = $request->get('profile', 'master_copy');
         $priority = $request->get('priority', 2);
@@ -213,10 +214,38 @@ class IngestController extends Controller
             $dm->persist($multimediaObject);
             $dm->flush();
         } elseif (strpos($flavor, 'dublincore/episode') === 0) {
-            $newTitle = (string) $catalogDcterms->title;
-            foreach($multimediaObject->getI18nTitle() as $language => $title){
-                $multimediaObject->setTitle($newTitle, $language);
+            if ($newTitle = (string) $catalogDcterms->title) {
+                foreach ($multimediaObject->getI18nTitle() as $language => $title) {
+                    $multimediaObject->setTitle($newTitle, $language);
+                }
             }
+            if ($newDescription = (string) $catalogDcterms->description) {
+                foreach ($multimediaObject->getI18nDescription() as $language => $description) {
+                    $multimediaObject->setDescription($newDescription, $language);
+                }
+            }
+            if ($newCopyright = (string) $catalogDcterms->accessRights) {
+                $multimediaObject->setCopyright($newCopyright);
+            }
+            if ($newLicense = (string) $catalogDcterms->license) {
+                $multimediaObject->setLicense($newLicense);
+            }
+            if ($newRecordDate = (string) $catalogDcterms->created) {
+                $multimediaObject->setRecordDate(new \DateTime($newRecordDate));
+            }
+            $personService = $this->get('pumukitschema.person');
+            foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
+                $roleCod = $role->getCod();
+                foreach ($catalogDcterms->$roleCod as $personName) {
+                    $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
+                    if (!$newPerson) {
+                        $newPerson = new Person();
+                        $newPerson->setName((string) $personName);
+                    }
+                    $multimediaObject = $personService->createRelationPerson($newPerson, $role, $multimediaObject);
+                }
+            }
+
             $dm->persist($multimediaObject);
             $dm->flush();
         }

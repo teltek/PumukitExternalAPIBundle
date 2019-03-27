@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
+use Pumukit\SchemaBundle\Document\Person;
+use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
 
 class IngestControllerTest extends WebTestCase
@@ -26,6 +28,10 @@ class IngestControllerTest extends WebTestCase
             ->remove(array());
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
             ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
+            ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
+            ->remove(array());
     }
 
     public function tearDown()
@@ -33,6 +39,10 @@ class IngestControllerTest extends WebTestCase
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
             ->remove(array());
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
+            ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
+            ->remove(array());
+        $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
             ->remove(array());
         $this->dm->close();
         $this->jobService = null;
@@ -69,8 +79,8 @@ class IngestControllerTest extends WebTestCase
         $createdAt = new \DateTime();
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($mmobj instanceof MultimediaObject);
+        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertTrue($multimediaObject instanceof MultimediaObject);
         $this->assertEquals($createdAt, new \DateTime($mediapackage['start']));
         $this->assertNotEmpty($mediapackage->media);
         $this->assertNotEmpty($mediapackage->metadata);
@@ -106,10 +116,10 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', '/api/ingest/addAttachment', $postParams, array('BODY' => $subtitleFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($mmobj instanceof MultimediaObject);
-        $this->assertEquals(count($mmobj->getMaterials()), 1);
-        $this->assertEquals($mmobj->getMaterials()[0]->getMimeType(), $postParams['flavor']);
+        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertTrue($multimediaObject instanceof MultimediaObject);
+        $this->assertEquals(count($multimediaObject->getMaterials()), 1);
+        $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
         $this->assertEquals((string) $mediapackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
         $this->assertNotEmpty($mediapackage->media);
         $this->assertNotEmpty($mediapackage->metadata);
@@ -167,9 +177,9 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($mmobj instanceof MultimediaObject);
-        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($mmobj->getId());
+        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertTrue($multimediaObject instanceof MultimediaObject);
+        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
     }
 
@@ -227,8 +237,8 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(500, $client->getResponse()->getStatusCode());
 
         // Add series catalog (creates new series);
-        $mmobj = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $originalSeries = $mmobj->getSeries();
+        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $originalSeries = $multimediaObject->getSeries();
         $seriesFile = $this->getUploadFile('series.xml');
         $seriesCatalog = simplexml_load_file($seriesFile, 'SimpleXMLElement', LIBXML_NOCDATA);
 
@@ -237,8 +247,8 @@ class IngestControllerTest extends WebTestCase
 
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
-        $this->dm->refresh($mmobj);
-        $newSeries = $mmobj->getSeries();
+        $this->dm->refresh($multimediaObject);
+        $newSeries = $multimediaObject->getSeries();
         $this->assertTrue($newSeries instanceof Series);
         $this->assertNotEquals($originalSeries->getId(), $newSeries->getId());
         $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
@@ -248,8 +258,8 @@ class IngestControllerTest extends WebTestCase
         file_put_contents($seriesFile, $seriesCatalog->asXml());
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
-        $this->dm->refresh($mmobj);
-        $newSeries = $mmobj->getSeries();
+        $this->dm->refresh($multimediaObject);
+        $newSeries = $multimediaObject->getSeries();
         $this->assertEquals($originalSeries->getId(), $newSeries->getId());
         $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
 
@@ -259,13 +269,50 @@ class IngestControllerTest extends WebTestCase
             'flavor' => 'dublincore/episode',
         );
         $episodeFile = $this->getUploadFile('episode.xml');
+        $newPerson = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
+        $this->assertFalse($newPerson instanceof Person);
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
-        $this->dm->refresh($mmobj);
-        $this->assertEquals('Changed title', $mmobj->getTitle());
-        foreach($mmobj->getI18nTitle() as $language => $title){
+        $this->dm->refresh($multimediaObject);
+        $this->assertEquals('Changed title', $multimediaObject->getTitle());
+        foreach ($multimediaObject->getI18nTitle() as $language => $title) {
             $this->assertEquals('Changed title', $title);
         }
+        foreach ($multimediaObject->getI18nDescription() as $language => $description) {
+            $this->assertEquals('Changed description', $description);
+        }
+        $this->assertEquals('@1999-2019', $multimediaObject->getCopyright());
+        $this->assertEquals('All rights reserved', $multimediaObject->getLicense());
+        $this->assertEquals(new \DateTime('2018-10-17T14:00:44Z'), $multimediaObject->getRecordDate());
+        //There are no people because there are no roles to add them as.
+        $this->assertEquals(0, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
+        $publisherRole = new Role();
+        $publisherRole->setCod('publisher');
+        $contributorRole = new Role();
+        $contributorRole->setCod('contributor');
+        $this->dm->persist($publisherRole);
+        $this->dm->persist($contributorRole);
+        $this->dm->flush();
+
+        // Test that now all people were added correctly
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
+        $this->dm->refresh($multimediaObject);
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
+        $this->assertTrue($person instanceof Person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole)));
+
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery johnson']);
+        $this->assertTrue($person instanceof Person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole, $publisherRole)));
+
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery son']);
+        $this->assertTrue($person instanceof Person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($publisherRole)));
+
+        //Sanity check to make sure we're not duplicating people.
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
     }
 
     protected function getUploadFile($localFile)

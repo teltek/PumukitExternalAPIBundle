@@ -3,6 +3,13 @@
     <dcterms:created>2018-10-17T14:00:44Z</dcterms:created>
     <dcterms:temporal>start=2018-10-17T14:00:00Z; end=2018-10-17T14:05:00Z; scheme=W3C-DTF;</dcterms:temporal>
     <dcterms:spatial>GCMobile-alfro-Z97P-D3</dcterms:spatial>
-    <dcterms:title>Changed title</dcterms:title>
+    <dcterms:title>Changed title</dcterms:title>C
+    <dcterms:description>Changed description</dcterms:description>
+    <dcterms:contributor>John doe</dcterms:contributor>
+    <dcterms:contributor>Avery johnson</dcterms:contributor>
+    <dcterms:publisher>Avery johnson</dcterms:publisher>
+    <dcterms:publisher>Avery son</dcterms:publisher>
+    <dcterms:accessRights>@1999-2019</dcterms:accessRights>
+    <dcterms:license>All rights reserved</dcterms:license>
     <dcterms:identifier>a8c916b1-ea38-46e5-8912-d14338bc451e</dcterms:identifier>
 </dublincore>
