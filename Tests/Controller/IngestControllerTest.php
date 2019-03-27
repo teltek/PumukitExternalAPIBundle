@@ -80,7 +80,7 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($multimediaObject instanceof MultimediaObject);
+        $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($createdAt, new \DateTime($mediapackage['start']));
         $this->assertNotEmpty($mediapackage->media);
         $this->assertNotEmpty($mediapackage->metadata);
@@ -117,7 +117,7 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($multimediaObject instanceof MultimediaObject);
+        $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals(count($multimediaObject->getMaterials()), 1);
         $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
         $this->assertEquals((string) $mediapackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
@@ -157,7 +157,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test without params
         $client->request('POST', '/api/ingest/addTrack');
-        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params (still should fail)
         $postParams = array(
@@ -165,20 +165,20 @@ class IngestControllerTest extends WebTestCase
             'flavor' => 'presentation/source',
         );
         $client->request('POST', '/api/ingest/addTrack', $postParams);
-        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test sending bad media track file
         $badFile = $this->generateSubtitleFile();
         $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $badFile), array('CONTENT_TYPE' => 'multipart/form-data'));
-        $this->assertEquals(500, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $client->getResponse()->getStatusCode());
 
         // Test sending correct media track file
         $trackFile = $this->generateTrackFile();
         $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        $this->assertTrue($multimediaObject instanceof MultimediaObject);
+        $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
     }
@@ -205,7 +205,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test without params
         $client->request('POST', '/api/ingest/addCatalog');
-        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
     }
 
     public function testAddDCCatalog()
@@ -217,7 +217,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test without params
         $client->request('POST', '/api/ingest/addDCCatalog');
-        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params but wrong values (still should fail)
         $postParams = array(
@@ -225,7 +225,7 @@ class IngestControllerTest extends WebTestCase
             'flavor' => 'random/catalog',
         );
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams);
-        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params but wrong XML file
         $postParams = array(
@@ -246,10 +246,10 @@ class IngestControllerTest extends WebTestCase
         $seriesCatalogDcterms = $seriesCatalog->children($namespacesMetadata['dcterms']);
 
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
-        $this->assertTrue($newSeries instanceof Series);
+        $this->assertInstanceOf(Series::class, $newSeries);
         $this->assertNotEquals($originalSeries->getId(), $newSeries->getId());
         $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
 
@@ -257,7 +257,7 @@ class IngestControllerTest extends WebTestCase
         $seriesCatalogDcterms->identifier = $originalSeries->getId();
         file_put_contents($seriesFile, $seriesCatalog->asXml());
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
         $this->assertEquals($originalSeries->getId(), $newSeries->getId());
@@ -272,7 +272,7 @@ class IngestControllerTest extends WebTestCase
         $newPerson = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
         $this->assertFalse($newPerson instanceof Person);
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $this->assertEquals('Changed title', $multimediaObject->getTitle());
         foreach ($multimediaObject->getI18nTitle() as $language => $title) {
@@ -299,15 +299,15 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
         $this->dm->refresh($multimediaObject);
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
-        $this->assertTrue($person instanceof Person);
+        $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole)));
 
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery johnson']);
-        $this->assertTrue($person instanceof Person);
+        $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole, $publisherRole)));
 
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery son']);
-        $this->assertTrue($person instanceof Person);
+        $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($publisherRole)));
 
         //Sanity check to make sure we're not duplicating people.

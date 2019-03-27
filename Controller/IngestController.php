@@ -49,7 +49,7 @@ class IngestController extends Controller
         $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -61,27 +61,27 @@ class IngestController extends Controller
         if (!$mediapackage) {
             $multimediaObjectId = $request->request->get('id');
 
-            return new Response("No 'mediaPackage' parameter", 400);
+            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
         }
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
-            return new Response("No 'flavor' parameter", 400);
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$request->files->has('BODY')) {
-            return new Response('No attachment file', 400);
+            return new Response('No attachment file', Response::HTTP_BAD_REQUEST);
         }
 
         try {
             $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
-            return new Response($e->getMessage(), 500);
+            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         $dm = $this->get('doctrine_mongodb')->getManager();
         $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
         if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', 404);
+            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
 
         $materialMetadata = array(
@@ -91,7 +91,7 @@ class IngestController extends Controller
         $multimediaObject = $materialService->addMaterialFile($multimediaObject, $request->files->get('BODY'), $materialMetadata);
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -101,26 +101,26 @@ class IngestController extends Controller
     {
         $mediapackage = $request->request->get('mediaPackage');
         if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", 400);
+            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
         }
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
-            return new Response("No 'flavor' parameter", 400);
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$request->files->has('BODY')) {
-            return new Response('No track file uploaded', 400);
+            return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
         }
 
         try {
             $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
-            return new Response($e->getMessage(), 500);
+            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         $dm = $this->get('doctrine_mongodb')->getManager();
         $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
         if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', 404);
+            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
 
         $profile = $request->get('profile', 'master_copy');
@@ -132,12 +132,12 @@ class IngestController extends Controller
         try {
             $multimediaObject = $jobService->createTrackFromLocalHardDrive($multimediaObject, $request->files->get('BODY'), $profile, $priority, $language, $description);
         } catch (\Exception $e) {
-            return new Response('Upload failed. The file is not a valid video or audio file.', 500);
+            return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXml(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXml(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
     }
 
     /**
@@ -147,19 +147,19 @@ class IngestController extends Controller
     {
         $mediapackage = $request->request->get('mediaPackage');
         if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", 400);
+            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
-            return new Response("No 'flavor' parameter", 400);
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$request->files->has('BODY')) {
-            return new Response('No catalog file uploaded', 400);
+            return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
         }
 
-        return new Response('OK', 200);
+        return new Response('OK', Response::HTTP_OK);
     }
 
     /**
@@ -169,18 +169,18 @@ class IngestController extends Controller
     {
         $mediapackage = $request->request->get('mediaPackage');
         if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", 400);
+            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
-            return new Response("No 'flavor' parameter", 400);
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         } elseif (strpos($flavor, 'dublincore/') !== 0) {
-            return new Response("Only 'dublincore' catalogs 'flavor' parameter", 400);
+            return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$request->files->has('BODY')) {
-            return new Response('No catalog file uploaded', 400);
+            return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
         }
 
         $catalog = $request->files->get('BODY');
@@ -188,18 +188,18 @@ class IngestController extends Controller
         try {
             $catalog = simplexml_load_file($catalog, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
-            return new Response($e->getMessage(), 500);
+            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
         try {
             $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Exception $e) {
-            return new Response($e->getMessage(), 500);
+            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         $dm = $this->get('doctrine_mongodb')->getManager();
         $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
         if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', 404);
+            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
 
         $namespacesMetadata = $catalog->getNamespaces(true);
@@ -252,6 +252,6 @@ class IngestController extends Controller
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), 200, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
     }
 }
