@@ -32,6 +32,8 @@ class IngestControllerTest extends WebTestCase
             ->remove(array());
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
             ->remove(array());
+        $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
+            ->remove(array());
     }
 
     public function tearDown()
@@ -43,6 +45,8 @@ class IngestControllerTest extends WebTestCase
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
             ->remove(array());
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
+            ->remove(array());
+        $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
             ->remove(array());
         $this->dm->close();
         $this->jobService = null;
@@ -173,7 +177,7 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $client->getResponse()->getStatusCode());
 
         // Test sending correct media track file
-        $trackFile = $this->generateTrackFile();
+        $trackFile = $this->generateTrackFile('presenter.mp4');
         $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
@@ -183,7 +187,7 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
     }
 
-    protected function generateTrackFile()
+    protected function generateTrackFile($localFile)
     {
         // $finder = new Finder();
         // $finder->files()->in(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/');
@@ -323,5 +327,108 @@ class IngestControllerTest extends WebTestCase
         $seriesFile = new UploadedFile($uploadFile, $localFile);
 
         return $seriesFile;
+    }
+
+    public function testAddMediaPackage()
+    {
+        // Set up
+        $publisherRole = new Role();
+        $publisherRole->setCod('publisher');
+        $contributorRole = new Role();
+        $contributorRole->setCod('contributor');
+        $creatorRole = new Role();
+        $creatorRole->setCod('creator');
+        $notUsedRole = new Role();
+        $notUsedRole->setCod('not_used_role');
+        $this->dm->persist($publisherRole);
+        $this->dm->persist($contributorRole);
+        $this->dm->persist($creatorRole);
+        $this->dm->persist($notUsedRole);
+        $this->dm->flush();
+        $client = $this->createAuthorizedClient();
+        // Test without params
+        $client->request('POST', '/api/ingest/addMediaPackage');
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+
+        $postParams = array(
+            // Required:
+            'flavor' => 'presenter/source',
+            // 'flavor' => 'presentation/source', // How to add TWO files simultaneously?
+            // Optional:
+            //'abstract' => 'Episode metadata value',
+            'accessRights' => '@1999-2019',
+            //'available' => 'Episode metadata value',
+            'contributor' => 'Avery the third',
+            //'coverage' => 'Episode metadata value',
+            //'created' => 'Episode metadata value',
+            'creator' => 'Doe, John',
+            //'date' => 'Episode metadata value',
+            'description' => 'Description test',
+            //'extent' => 'Episode metadata value',
+            //'format' => 'Episode metadata value',
+            //'identifier' => 'Episode metadata value',
+            //'isPartOf' => 'Episode metadata value',
+            //'isReferencedBy' => 'Episode metadata value',
+            //'isReplacedBy' => 'Episode metadata value',
+            //'language' => 'Episode metadata value',
+            'license' => 'All rights reserved',
+            'publisher' => array('Avery the third', 'Avery the fourth'),
+            // 'relation' => 'Episode metadata value',
+            // 'replaces' => 'Episode metadata value',
+            // 'rights' => 'Episode metadata value',
+            // 'rightsHolder' => 'Episode metadata value',
+            // 'source' => 'Episode metadata value',
+            // 'spatial' => 'Episode metadata value',
+            // 'subject' => 'Episode metadata value',
+            // 'temporal' => 'Episode metadata value',
+            'title' => 'AddMediaPackageTest',
+            // 'type' => 'Episode metadata value',
+            // 'episodeDCCatalogUri' => 'URL of episode DublinCore Catalog',
+            // 'episodeDCCatalog' => 'Episode DublinCore Catalog',
+            // 'seriesDCCatalogUri' => 'URL of series DublinCore Catalog',
+            // 'seriesDCCatalog' => 'Series DublinCore Catalog',
+            // 'mediaUri' => 'URL of a media track file ',
+        );
+        $trackFile = $this->generateTrackFile('presenter.mp4');
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $this->assertInstanceOf('SimpleXMLElement', $mediapackage);
+        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
+        $this->assertEquals($postParams['accessRights'], $multimediaObject->getCopyright());
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the third']);
+        $this->assertInstanceOf(Person::class, $person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole, $publisherRole)));
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the fourth']);
+        $this->assertInstanceOf(Person::class, $person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($publisherRole)));
+        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Doe, John']);
+        $this->assertInstanceOf(Person::class, $person);
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($creatorRole)));
+        $this->assertEquals(3, count($multimediaObject->getPeople()));
+        $this->assertEquals(0, count($multimediaObject->getPeopleByRole($notUsedRole)));
+
+        foreach ($multimediaObject->getI18nDescription() as $language => $description) {
+            $this->assertEquals($postParams['description'], $description);
+        }
+        foreach ($multimediaObject->getI18nTitle() as $language => $title) {
+            $this->assertEquals($postParams['title'], $title);
+        }
+
+        //I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
+        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
+        $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
+
+        $trackFiles = array(
+            $this->generateTrackFile('presenter.mp4'),
+            $this->generateTrackFile('presentation.mp4'),
+        );
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, array('BODY' => $trackFiles), array('CONTENT_TYPE' => 'multipart/form-data'));
+        //$jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
+        $jobRepository = $this->dm->getRepository('PumukitEncoderBundle:Job');
+        $this->dm->refresh($multimediaObject);
+        $jobs = $jobRepository->findByMultimediaObjectId($multimediaObject->getId());
+        $this->assertEquals(2, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
     }
 }

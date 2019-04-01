@@ -254,4 +254,88 @@ class IngestController extends Controller
 
         return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
     }
+
+    /**
+     * @Route("/addMediaPackage", methods="POST")
+     */
+    public function addMediaPackageAction(Request $request)
+    {
+        $flavor = $request->request->get('flavor');
+        if (!$flavor) {
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$request->files->has('BODY')) {
+            return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
+        }
+
+        //createMediaPackage logic
+        $dm = $this->get('doctrine_mongodb')->getManager();
+        $factoryService = $this->get('pumukitschema.factory');
+        $series = $factoryService->createSeries($this->getUser());
+        $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
+
+        //Add catalogDC logic (kinda)
+        if ($copyright = $request->request->get('accessRights')) {
+            $multimediaObject->setCopyright($copyright);
+        }
+
+        $personService = $this->get('pumukitschema.person');
+        foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
+            $roleCod = $role->getCod();
+            $peopleNames = $request->request->get($roleCod);
+            if (!$peopleNames) {
+                continue;
+            }
+            if (!is_array($peopleNames)) {
+                $peopleNames = array($peopleNames);
+            }
+            foreach ($peopleNames as $personName) {
+                $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
+                if (!$newPerson) {
+                    $newPerson = new Person();
+                    $newPerson->setName((string) $personName);
+                }
+                $multimediaObject = $personService->createRelationPerson($newPerson, $role, $multimediaObject);
+            }
+        }
+
+        if ($newTitle = $request->request->get('title')) {
+            foreach ($multimediaObject->getI18nTitle() as $language => $title) {
+                $multimediaObject->setTitle($newTitle, $language);
+            }
+        }
+
+        if ($newDescription = $request->request->get('description')) {
+            foreach ($multimediaObject->getI18nDescription() as $language => $description) {
+                $multimediaObject->setDescription($newDescription, $language);
+            }
+        }
+
+        // Add track
+        if ($flavors = $request->request->get('flavor') && $tracks = $request->files->get('BODY')) {
+            // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
+            $profile = $request->get('profile', 'master_copy');
+            $priority = $request->get('priority', 2);
+            $language = $request->get('language', 'en');
+            $description = '';
+            $jobService = $this->get('pumukitencoder.job');
+            if (!is_array($tracks)) {
+                $tracks = array($tracks);
+            }
+            foreach ($tracks as $track) {
+                try {
+                    $multimediaObject = $jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
+                } catch (\Exception $e) {
+                    return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+
+        $dm->persist($multimediaObject);
+        $dm->flush();
+        $mediaPackage = $this->generateXML($multimediaObject);
+
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK);
+    }
 }

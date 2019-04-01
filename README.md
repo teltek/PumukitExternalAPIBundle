@@ -26,3 +26,8 @@ Add episode (to change title)
 ```
 curl -X POST -i --basic -u admin:admin https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml 
 ```
+
+addMediaPackage (do previous ones simultaneously):
+```
+curl -X POST -f -i --basic -u admino:admino https://gcms-local.teltek.es/app_dev.php/api/ingest/addMediaPackage -F contributor='test CURL' -F title='Test CURL' -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'
+```
