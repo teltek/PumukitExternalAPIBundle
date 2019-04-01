@@ -18,15 +18,20 @@ Creates an empty media package
 *NONE*
 
 **Optional (query) parameters:**  
-*series:* Series id for the multimedia object. If not set a new series will be created
+*series:* Series id for the multimedia object. If not set a new series will be created.
 
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
 **Status codes:**  
-*200:* OK, Returns media package format like Opencast  
+*200:* OK, Returns media package format like Opencast.  
 *404:* Not Found, series does not exist.  
-*500:* Internal Server Error, *NONE*
+*500:* Internal Server Error, *NONE**.
+
+**Example curl:**  
+```
+curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/ingest/createMediaPackage
+```
 
 # POST /addAttachment
 **Description:**  
@@ -36,24 +41,29 @@ Adds an attachment to a given media package using an input stream.
 *NONE*
 
 **Required (form) parameters:**  
-*flavor:* Type of attachment  
-*mediaPackage:* The mediapackage as XML
+*flavor:* Type of attachment.  
+*mediaPackage:* The mediapackage as XML.
 
 **BODY (upload) parameter:**  
-The attachment file
+The attachment file.
 
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
 **Status codes:**  
-*200:* OK, Returns media package format like Opencast with attached file  
-*400:* Bad Request, media package or data not valid  
+*200:* OK, Returns media package format like Opencast with attached file.  
+*400:* Bad Request, media package or data not valid.  
 *404:* Not Found, media package does not exist.  
-*500:* Internal Server Error, *NONE*
+*500:* Internal Server Error, *NONE*.
+
+**Example curl:**  
+```
+curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addAttachment -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="srt"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/subtitle.srt
+```
 
 # POST /addDCCatalog
 **Description:**  
-Adds a dublincore episode catalog to a given media package
+Adds a dublincore episode catalog to a given media package.
 
 **Path parameters:**  
 *NONE*
@@ -71,6 +81,15 @@ Adds a dublincore episode catalog to a given media package
 *400:* Bad Request, media package or data not valid.  
 *404:* Not Found, media package does not exist.  
 *500:* Internal Server Error, *NONE*.  
+
+**Example curl:**  
+```
+# Episode
+curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml 
+
+# Series
+curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="dublincore/series"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/series.xml 
+```
 
 # POST /addMediaPackage
 **Description:**  
@@ -104,6 +123,12 @@ The track file or files (this can be an array of tracks, each requiring one flav
 *404:* Not Found, series does not exist.  
 *500:* Internal Server Error, *NONE*.  
 
+**Example curl:**  
+```
+# Multiple tracks
+curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addMediaPackage -F contributor='Contributor Name' -F title='Example CURL' -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'
+```
+
 # POST /addTrack
 **Description:**  
 Adds track file to given mediapackage.
@@ -129,3 +154,8 @@ The track file.
 *400:* Bad Request, media package or data not valid.  
 *404:* Not Found, media package does not exist.  
 *500:* Internal Server Error, *NONE*
+
+**Example curl:**  
+```
+curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addTrack -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="presenter/source"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4
+```
