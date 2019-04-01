@@ -45,7 +45,14 @@ class IngestController extends Controller
     {
         $dm = $this->get('doctrine_mongodb')->getManager();
         $factoryService = $this->get('pumukitschema.factory');
-        $series = $factoryService->createSeries($this->getUser());
+        if ($seriesId = $request->request->get('series')) {
+            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
+            if (!$series) {
+                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
+            }
+        } else {
+            $series = $factoryService->createSeries($this->getUser());
+        }
         $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
         $mediaPackage = $this->generateXML($multimediaObject);
 
@@ -272,7 +279,14 @@ class IngestController extends Controller
         //createMediaPackage logic
         $dm = $this->get('doctrine_mongodb')->getManager();
         $factoryService = $this->get('pumukitschema.factory');
-        $series = $factoryService->createSeries($this->getUser());
+        if ($seriesId = $request->request->get('series')) {
+            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
+            if (!$series) {
+                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
+            }
+        } else {
+            $series = $factoryService->createSeries($this->getUser());
+        }
         $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
 
         //Add catalogDC logic (kinda)
