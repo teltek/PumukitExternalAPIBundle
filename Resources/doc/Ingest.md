@@ -152,9 +152,6 @@ Adds track file to given mediapackage.
 **BODY (upload) parameter:**  
 The track file.
 
-**Optional (form) parameters:**  
-*tags:* The tags for the media track.
-
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
