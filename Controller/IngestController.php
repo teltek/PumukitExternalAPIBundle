@@ -181,7 +181,7 @@ class IngestController extends Controller
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
             return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        } elseif (strpos($flavor, 'dublincore/') !== 0) {
+        } elseif (0 !== strpos($flavor, 'dublincore/')) {
             return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
@@ -210,7 +210,7 @@ class IngestController extends Controller
 
         $namespacesMetadata = $catalog->getNamespaces(true);
         $catalogDcterms = $catalog->children($namespacesMetadata['dcterms']);
-        if (strpos($flavor, 'dublincore/series') === 0) {
+        if (0 === strpos($flavor, 'dublincore/series')) {
             $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => (string) $catalogDcterms->identifier]);
             if (!$series) {
                 $factory = $this->get('pumukitschema.factory');
@@ -219,7 +219,7 @@ class IngestController extends Controller
             $multimediaObject->setSeries($series);
             $dm->persist($multimediaObject);
             $dm->flush();
-        } elseif (strpos($flavor, 'dublincore/episode') === 0) {
+        } elseif (0 === strpos($flavor, 'dublincore/episode')) {
             if ($newTitle = (string) $catalogDcterms->title) {
                 foreach ($multimediaObject->getI18nTitle() as $language => $title) {
                     $multimediaObject->setTitle($newTitle, $language);
