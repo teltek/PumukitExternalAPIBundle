@@ -16,6 +16,7 @@ use Pumukit\SchemaBundle\Document\Series;
 class IngestControllerTest extends WebTestCase
 {
     private $dm;
+    private $jobService;
 
     public function setUp()
     {

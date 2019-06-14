@@ -327,7 +327,9 @@ class IngestController extends Controller
         }
 
         // Add track
-        if ($flavors = $request->request->get('flavor') && $tracks = $request->files->get('BODY')) {
+        $flavors = $request->request->get('flavor');
+        $tracks = $request->files->get('BODY');
+        if ($flavors && $tracks) {
             // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
             $profile = $request->get('profile', 'master_copy');
             $priority = $request->get('priority', 2);
