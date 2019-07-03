@@ -24,7 +24,7 @@ class IngestController extends Controller
         $dm = $this->get('doctrine_mongodb')->getManager();
         $factoryService = $this->get('pumukitschema.factory');
         if ($seriesId = $request->request->get('series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
+            $series = $dm->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
                 return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
@@ -64,7 +64,7 @@ class IngestController extends Controller
         }
 
         $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $multimediaObject = $dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediapackage['id']]);
         if (!$multimediaObject) {
             return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
@@ -103,7 +103,7 @@ class IngestController extends Controller
             return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $multimediaObject = $dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediapackage['id']]);
         if (!$multimediaObject) {
             return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
@@ -143,6 +143,33 @@ class IngestController extends Controller
         if (!$request->files->has('BODY')) {
             return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
         }
+        $catalog = $request->files->get('BODY');
+
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediapackage);
+
+        if ('pumukit/episode' === $flavor) {
+
+            var_dump($catalog->getMimeType());
+
+            if (in_array($catalog->getMimeType(), array('application/xml', 'text/xml'))) {
+
+                try {
+                    $catalog = simplexml_load_file($catalog, 'SimpleXMLElement', LIBXML_NOCDATA);
+                } catch (\Exception $e) {
+                    return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+
+            } else {
+
+                $catalog = json_decode(file_get_contents($catalog), true);
+                if (JSON_ERROR_NONE !== json_last_error()) {
+                    return new Response(json_last_error_msg(), Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+
+            }
+
+            $this->processPumukitEpisode($catalog, $mediapackage);
+        }
 
         return new Response('OK', Response::HTTP_OK);
     }
@@ -152,6 +179,7 @@ class IngestController extends Controller
      */
     public function addDCCatalogAction(Request $request)
     {
+        $dm = $this->get('doctrine_mongodb')->getManager();
         $mediapackage = $request->request->get('mediaPackage');
         if (!$mediapackage) {
             return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
@@ -177,21 +205,12 @@ class IngestController extends Controller
             return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        try {
-            $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-        }
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediapackage);
 
         $namespacesMetadata = $catalog->getNamespaces(true);
         $catalogDcterms = $catalog->children($namespacesMetadata['dcterms']);
         if (0 === strpos($flavor, 'dublincore/series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => (string) $catalogDcterms->identifier]);
+            $series = $dm->getRepository(Series::class)->findOneBy(['_id' => (string) $catalogDcterms->identifier]);
             if (!$series) {
                 $factory = $this->get('pumukitschema.factory');
                 $series = $factory->createSeries($this->getUser());
@@ -220,10 +239,11 @@ class IngestController extends Controller
                 $multimediaObject->setRecordDate(new \DateTime($newRecordDate));
             }
             $personService = $this->get('pumukitschema.person');
-            foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
+            foreach ($dm->getRepository(Role::class)->findAll() as $role) {
                 $roleCod = $role->getCod();
+
                 foreach ($catalogDcterms->{$roleCod} as $personName) {
-                    $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
+                    $newPerson = $dm->getRepository(Person::class)->findOneBy(['name' => (string) $personName]);
                     if (!$newPerson) {
                         $newPerson = new Person();
                         $newPerson->setName((string) $personName);
@@ -259,7 +279,7 @@ class IngestController extends Controller
         $dm = $this->get('doctrine_mongodb')->getManager();
         $factoryService = $this->get('pumukitschema.factory');
         if ($seriesId = $request->request->get('series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
+            $series = $dm->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
                 return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
@@ -274,7 +294,7 @@ class IngestController extends Controller
         }
 
         $personService = $this->get('pumukitschema.person');
-        foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
+        foreach ($dm->getRepository(Role::class)->findAll() as $role) {
             $roleCod = $role->getCod();
             $peopleNames = $request->request->get($roleCod);
             if (!$peopleNames) {
@@ -284,7 +304,7 @@ class IngestController extends Controller
                 $peopleNames = [$peopleNames];
             }
             foreach ($peopleNames as $personName) {
-                $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
+                $newPerson = $dm->getRepository(Person::class)->findOneBy(['name' => (string) $personName]);
                 if (!$newPerson) {
                     $newPerson = new Person();
                     $newPerson->setName((string) $personName);
@@ -334,12 +354,12 @@ class IngestController extends Controller
         return new Response($mediaPackage->asXML(), Response::HTTP_OK);
     }
 
+
     protected function generateXML(MultimediaObject $multimediaObject)
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $xml->addAttribute('id', $multimediaObject->getId(), null);
         $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
-
         foreach ($multimediaObject->getMaterials() as $material) {
             $attachment = $xml->attachments->addChild('attachment');
             $attachment->addAttribute('id', $material->getId());
@@ -353,5 +373,26 @@ class IngestController extends Controller
         }
 
         return $xml;
+    }
+
+    private function getMultimediaObjectFromMediapackageXML($mediaPackage)
+    {
+        try {
+            $mediapackage = simplexml_load_string($mediaPackage, 'SimpleXMLElement', LIBXML_NOCDATA);
+        } catch (\Exception $e) {
+            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        $dm = $this->get('doctrine_mongodb')->getManager();
+        $multimediaObject = $dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediapackage['id']]);
+        if (!$multimediaObject) {
+            $msg = sprintf('The multimedia object with "id" "%s" cannot be found on the database', (string) $mediapackage['id']);
+            throw $this->createNotFoundException($msg);
+        }
+
+    }
+
+    private function processPumukitEpisode($catalog, $mediapackage)
+    {
+        //TODO
     }
 }
