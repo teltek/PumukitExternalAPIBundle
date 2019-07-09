@@ -2,17 +2,21 @@
 
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\BrowserKit\Cookie;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\BrowserKit\Cookie;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
+/**
+ * @internal
+ * @coversNothing
+ */
 class IngestControllerTest extends WebTestCase
 {
     private $dm;
@@ -20,54 +24,49 @@ class IngestControllerTest extends WebTestCase
 
     public function setUp()
     {
-        $options = array('environment' => 'test');
+        $options = ['environment' => 'test'];
         static::bootKernel($options);
         $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
         $this->dm = static::$kernel->getContainer()
             ->get('doctrine_mongodb')->getManager();
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
-            ->remove(array());
+            ->remove([])
+        ;
     }
 
     public function tearDown()
     {
         $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
-            ->remove(array());
+            ->remove([])
+        ;
         $this->dm->close();
         $this->jobService = null;
         gc_collect_cycles();
         parent::tearDown();
-    }
-
-    protected function createAuthorizedClient()
-    {
-        $client = static::createClient();
-        $container = static::$kernel->getContainer();
-
-        $token = new UsernamePasswordToken('tester', null, 'api', ['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API', 'ROLE_USER']);
-        $session = $container->get('session');
-        $session->set('_security_pumukit', serialize($token));
-        $session->save();
-
-        $client->getCookieJar()->set(new Cookie($session->getName(), $session->getId()));
-
-        return $client;
     }
 
     public function testCreateMediaPackage()
@@ -97,14 +96,14 @@ class IngestControllerTest extends WebTestCase
         $this->assertEmpty((string) $mediapackage->publications);
 
         $series = $multimediaObject->getSeries();
-        $client->request('POST', '/api/ingest/createMediaPackage', array('series' => $series->getId()));
+        $client->request('POST', '/api/ingest/createMediaPackage', ['series' => $series->getId()]);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($series->getId(), $multimediaObject->getSeries()->getId());
 
-        $client->request('POST', '/api/ingest/createMediaPackage', array('series' => 'fake id'));
+        $client->request('POST', '/api/ingest/createMediaPackage', ['series' => 'fake id']);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
     }
 
@@ -118,9 +117,9 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', '/api/ingest/addAttachment');
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
-        );
+        ];
         // Still fails if no flavor set
         $client->request('POST', '/api/ingest/addAttachment', $postParams);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
@@ -129,7 +128,7 @@ class IngestControllerTest extends WebTestCase
         // File generation
         $postParams['flavor'] = 'srt';
         $subtitleFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addAttachment', $postParams, array('BODY' => $subtitleFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addAttachment', $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
@@ -144,24 +143,13 @@ class IngestControllerTest extends WebTestCase
 
         // Request with invalid mediapackage
         $mediapackage['id'] = 'invalid-id';
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
             'flavor' => 'attachment/srt',
-        );
+        ];
         $subtitleFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addAttachment', $postParams, array('BODY' => $subtitleFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addAttachment', $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
-    }
-
-    protected function generateSubtitleFile()
-    {
-        $localFile = 'subtitles.srt';
-        $fp = fopen($localFile, 'wb');
-        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
-        $subtitleFile = new UploadedFile($localFile, $localFile);
-        fclose($fp);
-
-        return $subtitleFile;
     }
 
     public function testAddTrack()
@@ -176,40 +164,27 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params (still should fail)
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
             'flavor' => 'presentation/source',
-        );
+        ];
         $client->request('POST', '/api/ingest/addTrack', $postParams);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test sending bad media track file
         $badFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $badFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addTrack', $postParams, ['BODY' => $badFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $client->getResponse()->getStatusCode());
 
         // Test sending correct media track file
         $trackFile = $this->generateTrackFile('presenter.mp4');
-        $client->request('POST', '/api/ingest/addTrack', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addTrack', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
-    }
-
-    protected function generateTrackFile($localFile)
-    {
-        // $finder = new Finder();
-        // $finder->files()->in(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/');
-        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
-        $localFile = 'presenter.mp4';
-        $uploadFile = 'upload.mp4';
-        copy($filesDir.$localFile, $uploadFile);
-        $trackFile = new UploadedFile($uploadFile, $localFile);
-
-        return $trackFile;
     }
 
     public function testAddCatalog()
@@ -236,20 +211,20 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params but wrong values (still should fail)
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
             'flavor' => 'random/catalog',
-        );
+        ];
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Test with valid params but wrong XML file
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
             'flavor' => 'dublincore/series',
-        );
+        ];
         $badFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $badFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $badFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(500, $client->getResponse()->getStatusCode());
 
         // Add series catalog (creates new series);
@@ -261,7 +236,7 @@ class IngestControllerTest extends WebTestCase
         $namespacesMetadata = $seriesCatalog->getNamespaces(true);
         $seriesCatalogDcterms = $seriesCatalog->children($namespacesMetadata['dcterms']);
 
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $seriesFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
@@ -272,7 +247,7 @@ class IngestControllerTest extends WebTestCase
         // Test reassigning to an existing series
         $seriesCatalogDcterms->identifier = $originalSeries->getId();
         file_put_contents($seriesFile, $seriesCatalog->asXml());
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $seriesFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $seriesFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
@@ -280,14 +255,14 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
 
         // Test assign episode.xml to change title
-        $postParams = array(
+        $postParams = [
             'mediaPackage' => $mediapackage->asXML(),
             'flavor' => 'dublincore/episode',
-        );
+        ];
         $episodeFile = $this->getUploadFile('episode.xml');
         $newPerson = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
         $this->assertFalse($newPerson instanceof Person);
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $this->assertEquals('Changed title', $multimediaObject->getTitle());
@@ -311,34 +286,24 @@ class IngestControllerTest extends WebTestCase
         $this->dm->flush();
 
         // Test that now all people were added correctly
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
         $this->dm->refresh($multimediaObject);
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole]));
 
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery johnson']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole, $publisherRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole, $publisherRole]));
 
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery son']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($publisherRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$publisherRole]));
 
         //Sanity check to make sure we're not duplicating people.
-        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, array('BODY' => $episodeFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
-    }
-
-    protected function getUploadFile($localFile)
-    {
-        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
-        $uploadFile = 'upload.xml';
-        copy($filesDir.$localFile, $uploadFile);
-        $seriesFile = new UploadedFile($uploadFile, $localFile);
-
-        return $seriesFile;
     }
 
     public function testAddMediaPackage()
@@ -364,7 +329,7 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', '/api/ingest/addMediaPackage');
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
-        $postParams = array(
+        $postParams = [
             // Required:
             'flavor' => 'presenter/source',
             // 'flavor' => 'presentation/source', // How to add TWO files simultaneously?
@@ -386,7 +351,7 @@ class IngestControllerTest extends WebTestCase
             //'isReplacedBy' => 'Episode metadata value',
             //'language' => 'Episode metadata value',
             'license' => 'All rights reserved',
-            'publisher' => array('Avery the third', 'Avery the fourth'),
+            'publisher' => ['Avery the third', 'Avery the fourth'],
             // 'relation' => 'Episode metadata value',
             // 'replaces' => 'Episode metadata value',
             // 'rights' => 'Episode metadata value',
@@ -404,9 +369,9 @@ class IngestControllerTest extends WebTestCase
             // 'mediaUri' => 'URL of a media track file ',
             //Extra:
             'series' => $series->getId(),
-        );
+        ];
         $trackFile = $this->generateTrackFile('presenter.mp4');
-        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, array('BODY' => $trackFile), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $this->assertInstanceOf('SimpleXMLElement', $mediapackage);
@@ -415,13 +380,13 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals($postParams['accessRights'], $multimediaObject->getCopyright());
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the third']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($contributorRole, $publisherRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole, $publisherRole]));
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the fourth']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($publisherRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$publisherRole]));
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Doe, John']);
         $this->assertInstanceOf(Person::class, $person);
-        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, array($creatorRole)));
+        $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$creatorRole]));
         $this->assertEquals(3, count($multimediaObject->getPeople()));
         $this->assertEquals(0, count($multimediaObject->getPeopleByRole($notUsedRole)));
 
@@ -436,18 +401,65 @@ class IngestControllerTest extends WebTestCase
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
 
-        $trackFiles = array(
+        $trackFiles = [
             $this->generateTrackFile('presenter.mp4'),
             $this->generateTrackFile('presentation.mp4'),
-        );
+        ];
 
         $this->assertEquals($series->getId(), $multimediaObject->getSeries()->getId());
 
-        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, array('BODY' => $trackFiles), array('CONTENT_TYPE' => 'multipart/form-data'));
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFiles], ['CONTENT_TYPE' => 'multipart/form-data']);
         //$jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $jobRepository = $this->dm->getRepository('PumukitEncoderBundle:Job');
         $this->dm->refresh($multimediaObject);
         $jobs = $jobRepository->findByMultimediaObjectId($multimediaObject->getId());
         //$this->assertEquals(2, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
+    }
+
+    protected function createAuthorizedClient()
+    {
+        $client = static::createClient();
+        $container = static::$kernel->getContainer();
+
+        $token = new UsernamePasswordToken('tester', null, 'api', ['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API', 'ROLE_USER']);
+        $session = $container->get('session');
+        $session->set('_security_pumukit', serialize($token));
+        $session->save();
+
+        $client->getCookieJar()->set(new Cookie($session->getName(), $session->getId()));
+
+        return $client;
+    }
+
+    protected function generateSubtitleFile()
+    {
+        $localFile = 'subtitles.srt';
+        $fp = fopen($localFile, 'wb');
+        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
+        $subtitleFile = new UploadedFile($localFile, $localFile);
+        fclose($fp);
+
+        return $subtitleFile;
+    }
+
+    protected function generateTrackFile($localFile)
+    {
+        // $finder = new Finder();
+        // $finder->files()->in(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/');
+        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
+        $localFile = 'presenter.mp4';
+        $uploadFile = 'upload.mp4';
+        copy($filesDir.$localFile, $uploadFile);
+
+        return new UploadedFile($uploadFile, $localFile);
+    }
+
+    protected function getUploadFile($localFile)
+    {
+        $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
+        $uploadFile = 'upload.xml';
+        copy($filesDir.$localFile, $uploadFile);
+
+        return new UploadedFile($uploadFile, $localFile);
     }
 }

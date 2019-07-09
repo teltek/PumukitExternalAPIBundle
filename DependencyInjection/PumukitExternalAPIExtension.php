@@ -17,7 +17,7 @@ class PumukitExternalAPIExtension extends Extension
      */
     public function load(array $configs, ContainerBuilder $container)
     {
-        $permissions = array(array('role' => 'ROLE_ACCESS_INGEST_API', 'description' => 'Access the Ingest API'));
+        $permissions = [['role' => 'ROLE_ACCESS_INGEST_API', 'description' => 'Access the Ingest API']];
         $newPermissions = array_merge($container->getParameter('pumukitschema.external_permissions'), $permissions);
         $container->setParameter('pumukitschema.external_permissions', $newPermissions);
     }

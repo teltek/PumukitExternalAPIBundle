@@ -2,13 +2,13 @@
 
 namespace Pumukit\ExternalAPIBundle\Controller;
 
+use Pumukit\SchemaBundle\Document\MultimediaObject;
+use Pumukit\SchemaBundle\Document\Person;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-use Pumukit\SchemaBundle\Document\MultimediaObject;
-use Pumukit\SchemaBundle\Document\Person;
 
 /**
  * @Route("/api/ingest")
@@ -16,27 +16,6 @@ use Pumukit\SchemaBundle\Document\Person;
  */
 class IngestController extends Controller
 {
-    protected function generateXML(MultimediaObject $multimediaObject)
-    {
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
-        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
-
-        foreach ($multimediaObject->getMaterials() as $material) {
-            $attachment = $xml->attachments->addChild('attachment');
-            $attachment->addAttribute('id', $material->getId());
-            $attachment->addChild('mimetype', $material->getMimeType());
-            $tags = $attachment->addChild('tags');
-            foreach ($material->getTags() as $tag) {
-                $tags->addChild('tag', $tag);
-            }
-            $attachment->addChild('url', '');
-            $attachment->addChild('size', '');
-        }
-
-        return $xml;
-    }
-
     /**
      * @Route("/createMediaPackage", methods="POST")
      */
@@ -55,7 +34,7 @@ class IngestController extends Controller
         $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
@@ -90,14 +69,14 @@ class IngestController extends Controller
             return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
         }
 
-        $materialMetadata = array(
+        $materialMetadata = [
             'mime_type' => $flavor,
-        );
+        ];
         $materialService = $this->get('pumukitschema.material');
         $multimediaObject = $materialService->addMaterialFile($multimediaObject, $request->files->get('BODY'), $materialMetadata);
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
@@ -143,7 +122,7 @@ class IngestController extends Controller
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXml(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXml(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
@@ -181,7 +160,8 @@ class IngestController extends Controller
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
             return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        } elseif (0 !== strpos($flavor, 'dublincore/')) {
+        }
+        if (0 !== strpos($flavor, 'dublincore/')) {
             return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
@@ -242,7 +222,7 @@ class IngestController extends Controller
             $personService = $this->get('pumukitschema.person');
             foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
                 $roleCod = $role->getCod();
-                foreach ($catalogDcterms->$roleCod as $personName) {
+                foreach ($catalogDcterms->{$roleCod} as $personName) {
                     $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
                     if (!$newPerson) {
                         $newPerson = new Person();
@@ -258,7 +238,7 @@ class IngestController extends Controller
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, array('Content-Type' => 'text/xml'));
+        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
@@ -301,7 +281,7 @@ class IngestController extends Controller
                 continue;
             }
             if (!is_array($peopleNames)) {
-                $peopleNames = array($peopleNames);
+                $peopleNames = [$peopleNames];
             }
             foreach ($peopleNames as $personName) {
                 $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
@@ -336,7 +316,7 @@ class IngestController extends Controller
             $description = '';
             $jobService = $this->get('pumukitencoder.job');
             if (!is_array($tracks)) {
-                $tracks = array($tracks);
+                $tracks = [$tracks];
             }
             foreach ($tracks as $track) {
                 try {
@@ -352,5 +332,26 @@ class IngestController extends Controller
         $mediaPackage = $this->generateXML($multimediaObject);
 
         return new Response($mediaPackage->asXML(), Response::HTTP_OK);
+    }
+
+    protected function generateXML(MultimediaObject $multimediaObject)
+    {
+        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
+        $xml->addAttribute('id', $multimediaObject->getId(), null);
+        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
+
+        foreach ($multimediaObject->getMaterials() as $material) {
+            $attachment = $xml->attachments->addChild('attachment');
+            $attachment->addAttribute('id', $material->getId());
+            $attachment->addChild('mimetype', $material->getMimeType());
+            $tags = $attachment->addChild('tags');
+            foreach ($material->getTags() as $tag) {
+                $tags->addChild('tag', $tag);
+            }
+            $attachment->addChild('url', '');
+            $attachment->addChild('size', '');
+        }
+
+        return $xml;
     }
 }
