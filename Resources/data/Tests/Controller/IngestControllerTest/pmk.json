@@ -36,5 +36,14 @@
     "tags": [
         "PUCHWEBTV",
         "Dhumanities"
-    ]
+    ],
+    "role": {
+        "Author": [
+            "author1@example.es",
+            "author2@example.es"
+        ],
+        "Participant": [
+            "Participant1@example.es"
+        ]
+    }
 }

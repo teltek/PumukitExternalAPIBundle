@@ -67,6 +67,7 @@ class APIService
 
     private $mappingPumukitDataExceptions = [
         'tags',
+        'role',
     ];
 
     public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, TagService $tagService)
@@ -442,7 +443,7 @@ class APIService
      *
      * @throws \Exception
      *
-     * @return null|object
+     * @return object|null
      */
     private function getMultimediaObjectFromMediaPackageXML($mediaPackage)
     {
@@ -495,12 +496,20 @@ class APIService
         switch ($key) {
             case 'tags':
                 $this->processPumukitTags($multimediaObject, $value);
-
+                break;
+            case 'role':
+                $this->processPumukitRole($multimediaObject, $value);
                 break;
             default:
         }
     }
 
+    /**
+     * @param MultimediaObject $multimediaObject
+     * @param                  $value
+     *
+     * @throws \Exception
+     */
     private function processPumukitTags(MultimediaObject $multimediaObject, $value)
     {
         foreach ($value as $tagCod) {
@@ -510,6 +519,31 @@ class APIService
 
             if ($tag) {
                 $this->tagService->addTagByCodToMultimediaObject($multimediaObject, $tag->getCod(), false);
+            }
+        }
+    }
+
+    /**
+     * @param MultimediaObject $multimediaObject
+     * @param array            $value
+     */
+    private function processPumukitRole(MultimediaObject $multimediaObject, array $value)
+    {
+        foreach ($value as $key => $personEmails) {
+
+            $role = $this->documentManager->getRepository(Role::class)->findOneBy([
+                'cod' => $key,
+            ]);
+
+            foreach($personEmails as $email) {
+                $person = $this->documentManager->getRepository(Person::class)->findOneBy(
+                    [
+                        'email' => $email,
+                    ]
+                );
+                if ($role && $person) {
+                    $multimediaObject->addPersonWithRole($person, $role);
+                }
             }
         }
     }
