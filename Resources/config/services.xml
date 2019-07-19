@@ -14,6 +14,7 @@
             <argument type="service" id="pumukitschema.material"/>
             <argument type="service" id="pumukitencoder.job"/>
             <argument type="service" id="pumukitschema.person"/>
+            <argument type="service" id="pumukitschema.tag"/>
         </service>
 
     </services>

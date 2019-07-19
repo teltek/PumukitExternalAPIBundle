@@ -2,8 +2,6 @@
 
 namespace Pumukit\ExternalAPIBundle\Controller;
 
-use Pumukit\SchemaBundle\Document\MultimediaObject;
-use Pumukit\SchemaBundle\Document\Person;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -11,7 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @Route("/api/ingest")
+ * @Route("/api/ingest", methods="POST|GET")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  *
  * Class IngestController
@@ -19,13 +17,13 @@ use Symfony\Component\HttpFoundation\Response;
 class IngestController extends Controller
 {
     /**
-     * @Route("/createMediaPackage", methods="POST")
+     * @Route("/createMediaPackage")
      *
      * @param Request $request
      *
-     * @return Response
-     *
      * @throws \Exception
+     *
+     * @return Response
      */
     public function createMediaPackageAction(Request $request)
     {
@@ -35,13 +33,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @Route("/addAttachment", methods="POST")
+     * @Route("/addAttachment")
      *
      * @param Request $request
      *
-     * @return Response
-     *
      * @throws \Exception
+     *
+     * @return Response
      */
     public function addAttachmentAction(Request $request)
     {
@@ -51,12 +49,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @Route("/addTrack", methods="POST")
+     * @Route("/addTrack")
      *
      * @param Request $request
      *
-     * @return Response
      * @throws \Exception
+     *
+     * @return Response
      */
     public function addTrackAction(Request $request)
     {
@@ -66,13 +65,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @Route("/addCatalog", methods="POST")
+     * @Route("/addCatalog")
      *
      * @param Request $request
      *
-     * @return Response
-     *
      * @throws \Exception
+     *
+     * @return Response
      */
     public function addCatalogAction(Request $request)
     {
@@ -82,13 +81,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @Route("/addDCCatalog", methods="POST")
+     * @Route("/addDCCatalog")
      *
      * @param Request $request
      *
-     * @return Response
-     *
      * @throws \Exception
+     *
+     * @return Response
      */
     public function addDCCatalogAction(Request $request)
     {
@@ -98,12 +97,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @Route("/addMediaPackage", methods="POST")
+     * @Route("/addMediaPackage")
      *
      * @param Request $request
      *
-     * @return Response
      * @throws \Exception
+     *
+     * @return Response
      */
     public function addMediaPackageAction(Request $request)
     {
