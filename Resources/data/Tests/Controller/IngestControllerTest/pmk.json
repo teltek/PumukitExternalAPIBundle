@@ -18,6 +18,14 @@
     "line2" : {
         "en" : ""
     },
+    "properties" : {
+        "data1" : "data1",
+        "data2" : "data2",
+        "data3" : "data3",
+        "data4" : "data4",
+        "data5" : "data5"
+    },
+    "numview" : 714,
     "copyright" : "@1999-2019",
     "license" : "All rights reserved",
     "keywords" : {

@@ -29,7 +29,7 @@ curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ing
 
 Add pumukit episode (to change metadata)
 ```
-curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/addDCCatalog -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="pumukit/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/pmk.json
+curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/addCatalog -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="pumukit/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/pmk.json
 ```
 
 addMediaPackage (do previous ones simultaneously):
