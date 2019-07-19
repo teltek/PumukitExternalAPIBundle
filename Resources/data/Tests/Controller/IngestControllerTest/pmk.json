@@ -39,11 +39,24 @@
     ],
     "role": {
         "Author": [
-            "author1@example.es",
-            "author2@example.es"
+            {
+                "name": "Name author1",
+                "email": "author1@example.es"
+            },
+            {
+                "name": "Name author2",
+                "email": "author2@example.es"
+            }
         ],
         "Participant": [
-            "Participant1@example.es"
+            {
+                "name": "Name author3",
+                "email": "author3@example.es"
+            },
+            {
+                "name": "Name author4",
+                "email": "author4@example.es"
+            }
         ]
     }
 }

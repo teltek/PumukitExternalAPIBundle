@@ -68,6 +68,7 @@ class APIService
     private $mappingPumukitDataExceptions = [
         'tags',
         'role',
+        'people',
     ];
 
     public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, TagService $tagService)
@@ -443,7 +444,7 @@ class APIService
      *
      * @throws \Exception
      *
-     * @return object|null
+     * @return null|object
      */
     private function getMultimediaObjectFromMediaPackageXML($mediaPackage)
     {
@@ -496,9 +497,12 @@ class APIService
         switch ($key) {
             case 'tags':
                 $this->processPumukitTags($multimediaObject, $value);
+
                 break;
             case 'role':
+            case 'people':
                 $this->processPumukitRole($multimediaObject, $value);
+
                 break;
             default:
         }
@@ -530,19 +534,30 @@ class APIService
     private function processPumukitRole(MultimediaObject $multimediaObject, array $value)
     {
         foreach ($value as $key => $personEmails) {
-
+            $person = null;
             $role = $this->documentManager->getRepository(Role::class)->findOneBy([
                 'cod' => $key,
             ]);
 
-            foreach($personEmails as $email) {
-                $person = $this->documentManager->getRepository(Person::class)->findOneBy(
-                    [
-                        'email' => $email,
-                    ]
-                );
+            foreach ($personEmails as $data) {
+                if (is_array($data)) {
+                    $person = $this->documentManager->getRepository(Person::class)->findOneBy(
+                        [
+                            'email' => $data['email'],
+                        ]
+                    );
+
+                    if (!$person) {
+                        $person = new Person();
+                        $person->setEmail($data['email']);
+                        $person->setName($data['name']);
+                        $this->documentManager->persist($person);
+                        $this->documentManager->flush();
+                    }
+                }
+
                 if ($role && $person) {
-                    $multimediaObject->addPersonWithRole($person, $role);
+                    $this->personService->createRelationPerson($person, $role, $multimediaObject);
                 }
             }
         }
