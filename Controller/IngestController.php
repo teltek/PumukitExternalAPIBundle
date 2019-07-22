@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @Route("/api/ingest", methods="POST|GET")
+ * @Route("/api/ingest", methods="POST")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  *
  * Class IngestController
