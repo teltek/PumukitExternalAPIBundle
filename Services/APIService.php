@@ -17,6 +17,9 @@ use Pumukit\SchemaBundle\Services\TagService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Class APIService.
+ */
 class APIService
 {
     const PUMUKIT_EPISODE = 'pumukit/episode';
@@ -71,6 +74,16 @@ class APIService
         'people',
     ];
 
+    /**
+     * APIService constructor.
+     *
+     * @param DocumentManager $documentManager
+     * @param FactoryService  $factoryService
+     * @param MaterialService $materialService
+     * @param JobService      $jobService
+     * @param PersonService   $personService
+     * @param TagService      $tagService
+     */
     public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, TagService $tagService)
     {
         $this->documentManager = $documentManager;
@@ -82,9 +95,9 @@ class APIService
     }
 
     /**
-     * @param $mediaPackage
-     * @param $flavor
-     * @param $body
+     * @param mixed  $mediaPackage
+     * @param string $flavor
+     * @param mixed  $body
      *
      * @return bool|Response
      */
@@ -407,8 +420,8 @@ class APIService
     private function generateXML(MultimediaObject $multimediaObject)
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
-        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
+        $xml->addAttribute('id', $multimediaObject->getId());
+        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'));
 
         foreach ($multimediaObject->getMaterials() as $material) {
             $attachment = $xml->attachments->addChild('attachment');
@@ -440,11 +453,11 @@ class APIService
     }
 
     /**
-     * @param $mediaPackage
+     * @param mixed $mediaPackage
      *
      * @throws \Exception
      *
-     * @return null|object
+     * @return MultimediaObject
      */
     private function getMultimediaObjectFromMediaPackageXML($mediaPackage)
     {
@@ -470,6 +483,8 @@ class APIService
     /**
      * @param MultimediaObject $multimediaObject
      * @param array            $body
+     *
+     * @throws \Exception
      */
     private function processPumukitEpisode(MultimediaObject $multimediaObject, array $body)
     {
@@ -492,6 +507,13 @@ class APIService
         $this->documentManager->flush();
     }
 
+    /**
+     * @param MultimediaObject $multimediaObject
+     * @param string           $key
+     * @param array            $value
+     *
+     * @throws \Exception
+     */
     private function processPumukitDataExceptions(MultimediaObject $multimediaObject, $key, $value)
     {
         switch ($key) {
@@ -510,11 +532,11 @@ class APIService
 
     /**
      * @param MultimediaObject $multimediaObject
-     * @param                  $value
+     * @param array            $value
      *
      * @throws \Exception
      */
-    private function processPumukitTags(MultimediaObject $multimediaObject, $value)
+    private function processPumukitTags(MultimediaObject $multimediaObject, array $value)
     {
         foreach ($value as $tagCod) {
             $tag = $this->documentManager->getRepository(Tag::class)->findOneBy([
