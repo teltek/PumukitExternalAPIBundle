@@ -14,7 +14,6 @@ use Pumukit\SchemaBundle\Services\FactoryService;
 use Pumukit\SchemaBundle\Services\MaterialService;
 use Pumukit\SchemaBundle\Services\PersonService;
 use Pumukit\SchemaBundle\Services\TagService;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -95,40 +94,16 @@ class APIService
     }
 
     /**
-     * @param mixed  $mediaPackage
-     * @param string $flavor
-     * @param mixed  $body
-     *
-     * @return bool|Response
-     */
-    public function validatePostData($mediaPackage, $flavor, $body)
-    {
-        if (!$mediaPackage) {
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$body) {
-            return new Response('No attachment file', Response::HTTP_BAD_REQUEST);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param Request $request
-     * @param User    $user
+     * @param array $requestParameters
+     * @param User  $user
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function createMediaPackage(Request $request, User $user)
+    public function createMediaPackage(array $requestParameters, User $user)
     {
-        if ($seriesId = $request->request->get('series')) {
+        if ($seriesId = $requestParameters['series']) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
                 return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
@@ -145,23 +120,21 @@ class APIService
     }
 
     /**
-     * @param Request $request
+     * @param array $requestParameters
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function addAttachment(Request $request)
+    public function addAttachment(array $requestParameters)
     {
-        [$mediaPackage, $flavor, $body] = $this->getRequestParameters($request);
-
-        $this->validatePostData($mediaPackage, $flavor, $body);
+        [$mediaPackage, $flavor, $body] = array_values($requestParameters);
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
         $materialMetadata = ['mime_type' => $flavor];
 
-        $multimediaObject = $this->materialService->addMaterialFile($multimediaObject, $request->files->get('BODY'), $materialMetadata);
+        $multimediaObject = $this->materialService->addMaterialFile($multimediaObject, $body, $materialMetadata);
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
@@ -169,24 +142,17 @@ class APIService
     }
 
     /**
-     * @param Request $request
+     * @param array $requestParameters
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function addTrack(Request $request)
+    public function addTrack(array $requestParameters)
     {
-        [$mediaPackage, $flavor, $body] = $this->getRequestParameters($request);
-
-        $this->validatePostData($mediaPackage, $flavor, $body);
+        [$mediaPackage, $flavor, $body, $profile, $priority, $language, $description] = array_values($requestParameters);
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
-
-        $profile = $request->get('profile', 'master_copy');
-        $priority = $request->get('priority', 2);
-        $language = $request->get('language', 'en');
-        $description = $request->get('description', '');
 
         // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
         try {
@@ -201,17 +167,15 @@ class APIService
     }
 
     /**
-     * @param Request $request
+     * @param array $requestParameters
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function addCatalog(Request $request)
+    public function addCatalog(array $requestParameters)
     {
-        [$mediaPackage, $flavor, $body] = $this->getRequestParameters($request);
-
-        $this->validatePostData($mediaPackage, $flavor, $body);
+        [$mediaPackage, $flavor, $body] = array_values($requestParameters);
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
@@ -236,26 +200,21 @@ class APIService
     }
 
     /**
-     * @param Request $request
-     * @param User    $user
+     * @param array $requestParameters
+     * @param User  $user
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function addDCCatalog(Request $request, User $user)
+    public function addDCCatalog(array $requestParameters, User $user)
     {
-        [$mediaPackage, $flavor, $body] = $this->getRequestParameters($request);
+        [$mediaPackage, $flavor, $body] = array_values($requestParameters);
 
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
+
         if (0 !== strpos($flavor, 'dublincore/')) {
             return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$body) {
-            return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
         }
 
         try {
@@ -263,8 +222,6 @@ class APIService
         } catch (\Exception $e) {
             return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);
@@ -319,25 +276,18 @@ class APIService
     }
 
     /**
-     * @param Request $request
-     * @param User    $user
+     * @param array $requestParameters
+     * @param User  $user
      *
      * @throws \Exception
      *
      * @return Response
      */
-    public function addMediaPackage(Request $request, User $user)
+    public function addMediaPackage(array $requestParameters, User $user)
     {
-        $flavor = $request->request->get('flavor');
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
+        [$mediaPackage, $flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
 
-        if (!$request->files->has('BODY')) {
-            return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($seriesId = $request->request->get('series')) {
+        if ($seriesId) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
                 return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
@@ -345,19 +295,19 @@ class APIService
         } else {
             $series = $this->factoryService->createSeries($user);
         }
+
         $multimediaObject = $this->factoryService->createMultimediaObject($series, true, $user);
 
-        //Add catalogDC logic (kinda)
-        if ($copyright = $request->request->get('accessRights')) {
-            $multimediaObject->setCopyright($copyright);
+        if ($accessRights) {
+            $multimediaObject->setCopyright($accessRights);
         }
 
         foreach ($this->documentManager->getRepository(Role::class)->findAll() as $role) {
-            $roleCod = $role->getCod();
-            $peopleNames = $request->request->get($roleCod);
-            if (!$peopleNames) {
+            if (!isset($roles[$role->getCod()])) {
                 continue;
             }
+
+            $peopleNames = $roles[$role->getCod()];
             if (!is_array($peopleNames)) {
                 $peopleNames = [$peopleNames];
             }
@@ -371,31 +321,24 @@ class APIService
             }
         }
 
-        if ($newTitle = $request->request->get('title')) {
-            foreach ($multimediaObject->getI18nTitle() as $language => $title) {
-                $multimediaObject->setTitle($newTitle, $language);
+        if ($title) {
+            foreach ($multimediaObject->getI18nTitle() as $language => $value) {
+                $multimediaObject->setTitle($title, $language);
             }
         }
 
-        if ($newDescription = $request->request->get('description')) {
-            foreach ($multimediaObject->getI18nDescription() as $language => $description) {
-                $multimediaObject->setDescription($newDescription, $language);
+        if ($description) {
+            foreach ($multimediaObject->getI18nDescription() as $language => $value) {
+                $multimediaObject->setDescription($description, $language);
             }
         }
 
-        // Add track
-        $flavors = $request->request->get('flavor');
-        $tracks = $request->files->get('BODY');
-        if ($flavors && $tracks) {
-            // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
-            $profile = $request->get('profile', 'master_copy');
-            $priority = $request->get('priority', 2);
-            $language = $request->get('language', 'en');
+        if ($flavor && $body) {
             $description = [''];
-            if (!is_array($tracks)) {
-                $tracks = [$tracks];
+            if (!is_array($body)) {
+                $body = [$body];
             }
-            foreach ($tracks as $track) {
+            foreach ($body as $track) {
                 try {
                     $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
                 } catch (\Exception $e) {
@@ -436,20 +379,6 @@ class APIService
         }
 
         return $xml;
-    }
-
-    /**
-     * @param Request $request
-     *
-     * @return array
-     */
-    private function getRequestParameters(Request $request)
-    {
-        return [
-            $request->request->get('mediaPackage'),
-            $request->request->get('flavor'),
-            $request->files->get('BODY'),
-        ];
     }
 
     /**

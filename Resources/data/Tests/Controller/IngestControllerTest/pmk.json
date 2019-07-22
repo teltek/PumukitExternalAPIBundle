@@ -8,12 +8,12 @@
         "es": "Changed title es"
     },
     "subtitle": {
-        "es": "",
+        "es": "Changed subtitle es",
         "en": ""
     },
     "description": {
-        "es": "Changed description",
-        "en": "Changed description"
+        "es": "Changed description es",
+        "en": "Changed description en"
     },
     "properties": {
         "data1": "data1",
@@ -50,12 +50,12 @@
         ],
         "Participant": [
             {
-                "name": "Name author3",
-                "email": "author3@example.es"
+                "name": "Name participant1",
+                "email": "participant1@example.es"
             },
             {
-                "name": "Name author4",
-                "email": "author4@example.es"
+                "name": "Name participant2",
+                "email": "participant2@example.es"
             }
         ]
     }

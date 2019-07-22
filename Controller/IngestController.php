@@ -2,6 +2,7 @@
 
 namespace Pumukit\ExternalAPIBundle\Controller;
 
+use Pumukit\SchemaBundle\Document\Role;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -27,9 +28,14 @@ class IngestController extends Controller
      */
     public function createMediaPackageAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
+        $customParameters = [
+            'series' => false,
+        ];
+        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->createMediaPackage($request, $this->getUser());
+        return $apiService->createMediaPackage($requestParameters, $this->getUser());
     }
 
     /**
@@ -43,9 +49,10 @@ class IngestController extends Controller
      */
     public function addAttachmentAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->addAttachment($request);
+        return $apiService->addAttachment($requestParameters);
     }
 
     /**
@@ -59,9 +66,17 @@ class IngestController extends Controller
      */
     public function addTrackAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
+        $customParameters = [
+            'profile' => 'master_copy',
+            'priority' => 2,
+            'language' => 'en',
+            'description' => '',
+        ];
+        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->addTrack($request);
+        return $apiService->addTrack($requestParameters);
     }
 
     /**
@@ -75,9 +90,10 @@ class IngestController extends Controller
      */
     public function addCatalogAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->addCatalog($request);
+        return $apiService->addCatalog($requestParameters);
     }
 
     /**
@@ -91,9 +107,10 @@ class IngestController extends Controller
      */
     public function addDCCatalogAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->addDCCatalog($request, $this->getUser());
+        return $apiService->addDCCatalog($requestParameters, $this->getUser());
     }
 
     /**
@@ -107,8 +124,95 @@ class IngestController extends Controller
      */
     public function addMediaPackageAction(Request $request)
     {
+        $requestParameters = $this->getBasicRequestParameters($request);
+        $customParameters = [
+            'series' => false,
+            'accessRights' => false,
+            'title' => '',
+            'description' => '',
+            'profile' => 'master_copy',
+            'priority' => 2,
+            'language' => 'en',
+        ];
+        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+
+        $requestParameters = $this->getPeopleFromRoles($request, $requestParameters);
+
         $apiService = $this->get('pumukit_external_api.api_service');
 
-        return $apiService->addMediaPackage($request, $this->getUser());
+        return $apiService->addMediaPackage($requestParameters, $this->getUser());
+    }
+
+    /**
+     * @param Request $request
+     *
+     * @return array|Response
+     */
+    private function getBasicRequestParameters(Request $request)
+    {
+        return $this->validatePostData($request->request->get('mediaPackage'), $request->request->get('flavor'), $request->files->get('BODY'));
+    }
+
+    /**
+     * @param Request $request
+     * @param array   $requestParameters
+     * @param array   $customRequestParameters
+     *
+     * @return array
+     */
+    private function getCustomParameterFromRequest(Request $request, array $requestParameters, array $customRequestParameters)
+    {
+        foreach ($customRequestParameters as $key => $defaultValue) {
+            $requestParameters[$key] = $request->request->get($key, $defaultValue);
+        }
+
+        return $requestParameters;
+    }
+
+    /**
+     * @param Request $request
+     * @param array   $requestParameters
+     *
+     * @return array
+     */
+    private function getPeopleFromRoles(Request $request, array $requestParameters)
+    {
+        $documentManager = $this->get('doctrine_mongodb.odm.document_manager');
+        $roles = [];
+        foreach ($documentManager->getRepository(Role::class)->findAll() as $role) {
+            $roles[$role->getCod()] = $request->request->get($role->getCod());
+        }
+
+        $requestParameters['roles'] = $roles;
+
+        return $requestParameters;
+    }
+
+    /**
+     * @param mixed  $mediaPackage
+     * @param string $flavor
+     * @param mixed  $body
+     *
+     * @return array|Response
+     */
+    private function validatePostData($mediaPackage, $flavor, $body)
+    {
+        if (!$mediaPackage) {
+            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$flavor) {
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$body) {
+            return new Response('No attachment file', Response::HTTP_BAD_REQUEST);
+        }
+
+        return [
+            'mediaPackage' => $mediaPackage,
+            'flavor' => $flavor,
+            'body' => $body,
+        ];
     }
 }
