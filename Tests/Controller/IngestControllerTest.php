@@ -2,13 +2,14 @@
 
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
+use Doctrine\ODM\MongoDB\DocumentManager;
+use Pumukit\EncoderBundle\Services\JobService;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\Cookie;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -19,9 +20,19 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  */
 class IngestControllerTest extends WebTestCase
 {
+    /**
+     * @var DocumentManager
+     */
     private $dm;
+
+    /**
+     * @var JobService
+     */
     private $jobService;
 
+    /**
+     * @throws \Doctrine\ODM\MongoDB\MongoDBException
+     */
     public function setUp()
     {
         $options = ['environment' => 'test'];
@@ -29,7 +40,7 @@ class IngestControllerTest extends WebTestCase
         $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
         $this->dm = static::$kernel->getContainer()
             ->get('doctrine_mongodb')->getManager();
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
+        $this->dm->getDocumentCollection(MultimediaObject::class)
             ->remove([])
         ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
@@ -46,9 +57,12 @@ class IngestControllerTest extends WebTestCase
         ;
     }
 
+    /**
+     * @throws \Doctrine\ODM\MongoDB\MongoDBException
+     */
     public function tearDown()
     {
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:MultimediaObject')
+        $this->dm->getDocumentCollection(MultimediaObject::class)
             ->remove([])
         ;
         $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
@@ -69,6 +83,9 @@ class IngestControllerTest extends WebTestCase
         parent::tearDown();
     }
 
+    /**
+     * @throws \Exception
+     */
     public function testCreateMediaPackage()
     {
         $client = static::createClient();
@@ -82,24 +99,24 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', '/api/ingest/createMediaPackage');
         $createdAt = new \DateTime();
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
-        $this->assertEquals($createdAt, new \DateTime($mediapackage['start']));
-        $this->assertNotEmpty($mediapackage->media);
-        $this->assertNotEmpty($mediapackage->metadata);
-        $this->assertNotEmpty($mediapackage->attachments);
-        $this->assertNotEmpty($mediapackage->publications);
-        $this->assertEmpty((string) $mediapackage->media);
-        $this->assertEmpty((string) $mediapackage->metadata);
-        $this->assertEmpty((string) $mediapackage->attachments);
-        $this->assertEmpty((string) $mediapackage->publications);
+        $this->assertEquals($createdAt, new \DateTime($mediaPackage['start']));
+        $this->assertNotEmpty($mediaPackage->media);
+        $this->assertNotEmpty($mediaPackage->metadata);
+        $this->assertNotEmpty($mediaPackage->attachments);
+        $this->assertNotEmpty($mediaPackage->publications);
+        $this->assertEmpty((string) $mediaPackage->media);
+        $this->assertEmpty((string) $mediaPackage->metadata);
+        $this->assertEmpty((string) $mediaPackage->attachments);
+        $this->assertEmpty((string) $mediaPackage->publications);
 
         $series = $multimediaObject->getSeries();
         $client->request('POST', '/api/ingest/createMediaPackage', ['series' => $series->getId()]);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($series->getId(), $multimediaObject->getSeries()->getId());
 
@@ -112,13 +129,13 @@ class IngestControllerTest extends WebTestCase
         // Get valid mediapackage
         $client = $this->createAuthorizedClient();
         $client->request('POST', '/api/ingest/createMediaPackage');
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         // Fails if no post parameters
         $client->request('POST', '/api/ingest/addAttachment');
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
         ];
         // Still fails if no flavor set
         $client->request('POST', '/api/ingest/addAttachment', $postParams);
@@ -130,21 +147,21 @@ class IngestControllerTest extends WebTestCase
         $subtitleFile = $this->generateSubtitleFile();
         $client->request('POST', '/api/ingest/addAttachment', $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals(count($multimediaObject->getMaterials()), 1);
         $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
-        $this->assertEquals((string) $mediapackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
-        $this->assertNotEmpty($mediapackage->media);
-        $this->assertNotEmpty($mediapackage->metadata);
-        $this->assertNotEmpty($mediapackage->attachments);
-        $this->assertNotEmpty($mediapackage->publications);
+        $this->assertEquals((string) $mediaPackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
+        $this->assertNotEmpty($mediaPackage->media);
+        $this->assertNotEmpty($mediaPackage->metadata);
+        $this->assertNotEmpty($mediaPackage->attachments);
+        $this->assertNotEmpty($mediaPackage->publications);
 
         // Request with invalid mediapackage
-        $mediapackage['id'] = 'invalid-id';
+        $mediaPackage['id'] = 'invalid-id';
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
             'flavor' => 'attachment/srt',
         ];
         $subtitleFile = $this->generateSubtitleFile();
@@ -157,7 +174,7 @@ class IngestControllerTest extends WebTestCase
         // Set up
         $client = $this->createAuthorizedClient();
         $client->request('POST', '/api/ingest/createMediaPackage');
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
         $client->request('POST', '/api/ingest/addTrack');
@@ -165,7 +182,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test with valid params (still should fail)
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
             'flavor' => 'presentation/source',
         ];
         $client->request('POST', '/api/ingest/addTrack', $postParams);
@@ -177,14 +194,14 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $client->getResponse()->getStatusCode());
 
         // Test sending correct media track file
-        $trackFile = $this->generateTrackFile('presenter.mp4');
+        $trackFile = $this->generateTrackFile();
         $client->request('POST', '/api/ingest/addTrack', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
-        $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
+        $this->assertEquals(1, count($jobs));
     }
 
     public function testAddCatalog()
@@ -192,19 +209,22 @@ class IngestControllerTest extends WebTestCase
         // Set up
         $client = $this->createAuthorizedClient();
         $client->request('POST', '/api/ingest/createMediaPackage');
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        //$mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
         $client->request('POST', '/api/ingest/addCatalog');
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
     }
 
+    /**
+     * @throws \Doctrine\ODM\MongoDB\MongoDBException
+     */
     public function testAddDCCatalog()
     {
         // Set up
         $client = $this->createAuthorizedClient();
         $client->request('POST', '/api/ingest/createMediaPackage');
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
         $client->request('POST', '/api/ingest/addDCCatalog');
@@ -212,7 +232,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test with valid params but wrong values (still should fail)
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
             'flavor' => 'random/catalog',
         ];
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams);
@@ -220,7 +240,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test with valid params but wrong XML file
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
             'flavor' => 'dublincore/series',
         ];
         $badFile = $this->generateSubtitleFile();
@@ -228,7 +248,7 @@ class IngestControllerTest extends WebTestCase
         $this->assertEquals(500, $client->getResponse()->getStatusCode());
 
         // Add series catalog (creates new series);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $originalSeries = $multimediaObject->getSeries();
         $seriesFile = $this->getUploadFile('series.xml');
         $seriesCatalog = simplexml_load_file($seriesFile, 'SimpleXMLElement', LIBXML_NOCDATA);
@@ -256,7 +276,7 @@ class IngestControllerTest extends WebTestCase
 
         // Test assign episode.xml to change title
         $postParams = [
-            'mediaPackage' => $mediapackage->asXML(),
+            'mediaPackage' => $mediaPackage->asXML(),
             'flavor' => 'dublincore/episode',
         ];
         $episodeFile = $this->getUploadFile('episode.xml');
@@ -370,12 +390,13 @@ class IngestControllerTest extends WebTestCase
             //Extra:
             'series' => $series->getId(),
         ];
-        $trackFile = $this->generateTrackFile('presenter.mp4');
-        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+        $trackFile = $this->generateTrackFile();
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data','HTTPS' => 'https', 'HTTP_HOST' => 'localhost']);
+        var_dump(        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data','HTTPS' => 'https', 'HTTP_HOST' => 'localhost']));
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
-        $mediapackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-        $this->assertInstanceOf('SimpleXMLElement', $mediapackage);
-        $multimediaObject = $this->dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $this->assertInstanceOf('SimpleXMLElement', $mediaPackage);
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($postParams['accessRights'], $multimediaObject->getCopyright());
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the third']);
@@ -399,23 +420,22 @@ class IngestControllerTest extends WebTestCase
 
         //I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
-        $this->assertEquals(1, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
+        $this->assertEquals(1, count($jobs));
 
         $trackFiles = [
-            $this->generateTrackFile('presenter.mp4'),
-            $this->generateTrackFile('presentation.mp4'),
+            $this->generateTrackFile(),
+            $this->generateTrackFile(),
         ];
 
         $this->assertEquals($series->getId(), $multimediaObject->getSeries()->getId());
 
         $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFiles], ['CONTENT_TYPE' => 'multipart/form-data']);
-        //$jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
-        $jobRepository = $this->dm->getRepository('PumukitEncoderBundle:Job');
         $this->dm->refresh($multimediaObject);
-        $jobs = $jobRepository->findByMultimediaObjectId($multimediaObject->getId());
-        //$this->assertEquals(2, count($jobs)); // TODO: I don't want to wait for the job to finish executing to test the track metadata
     }
 
+    /**
+     * @return \Symfony\Bundle\FrameworkBundle\Client
+     */
     protected function createAuthorizedClient()
     {
         $client = static::createClient();
@@ -431,6 +451,9 @@ class IngestControllerTest extends WebTestCase
         return $client;
     }
 
+    /**
+     * @return UploadedFile
+     */
     protected function generateSubtitleFile()
     {
         $localFile = 'subtitles.srt';
@@ -442,10 +465,11 @@ class IngestControllerTest extends WebTestCase
         return $subtitleFile;
     }
 
-    protected function generateTrackFile($localFile)
+    /**
+     * @return UploadedFile
+     */
+    protected function generateTrackFile()
     {
-        // $finder = new Finder();
-        // $finder->files()->in(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/');
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
         $localFile = 'presenter.mp4';
         $uploadFile = 'upload.mp4';
@@ -454,6 +478,11 @@ class IngestControllerTest extends WebTestCase
         return new UploadedFile($uploadFile, $localFile);
     }
 
+    /**
+     * @param $localFile
+     *
+     * @return UploadedFile
+     */
     protected function getUploadFile($localFile)
     {
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
