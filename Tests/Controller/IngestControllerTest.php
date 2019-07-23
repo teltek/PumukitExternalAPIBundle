@@ -102,7 +102,10 @@ class IngestControllerTest extends WebTestCase
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
-        $this->assertEquals($createdAt, new \DateTime($mediaPackage['start']));
+        $this->assertEquals(
+            $createdAt->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'),
+            (string) $mediaPackage['start']
+        );
         $this->assertNotEmpty($mediaPackage->media);
         $this->assertNotEmpty($mediaPackage->metadata);
         $this->assertNotEmpty($mediaPackage->attachments);
