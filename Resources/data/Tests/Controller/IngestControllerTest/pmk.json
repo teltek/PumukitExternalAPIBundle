@@ -1,0 +1,62 @@
+{
+    "_id": "5d1c8a991b7a0031f012207e",
+    "status": 1,
+    "record_date": "2018-10-17T14:00:44Z",
+    "public_date": "2019-07-03T10:59:37.535Z",
+    "title": {
+        "en": "Changed title en",
+        "es": "Changed title es"
+    },
+    "subtitle": {
+        "es": "Changed subtitle es",
+        "en": ""
+    },
+    "description": {
+        "es": "Changed description es",
+        "en": "Changed description en"
+    },
+    "properties": {
+        "data1": "data1",
+        "data2": "data2",
+        "data3": "data3",
+        "data4": "data4",
+        "data5": "data5"
+    },
+    "numview": 714,
+    "copyright": "@1999-2019",
+    "license": "All rights reserved",
+    "keywords": {
+        "es": [
+            "palabra clave 1"
+        ],
+        "en": [
+            "keyword 1"
+        ]
+    },
+    "tags": [
+        "PUCHWEBTV",
+        "Dhumanities"
+    ],
+    "role": {
+        "Author": [
+            {
+                "name": "Name author1",
+                "email": "author1@example.es"
+            },
+            {
+                "name": "Name author2",
+                "email": "author2@example.es"
+            }
+        ],
+        "Participant": [
+            {
+                "name": "Name participant1",
+                "email": "participant1@example.es"
+            },
+            {
+                "name": "Name participant2",
+                "email": "participant2@example.es"
+            }
+        ]
+    }
+}

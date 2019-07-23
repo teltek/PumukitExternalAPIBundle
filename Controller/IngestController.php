@@ -2,8 +2,7 @@
 
 namespace Pumukit\ExternalAPIBundle\Controller;
 
-use Pumukit\SchemaBundle\Document\MultimediaObject;
-use Pumukit\SchemaBundle\Document\Person;
+use Pumukit\SchemaBundle\Document\Role;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -11,238 +10,149 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @Route("/api/ingest")
+ * @Route("/api/ingest", methods="POST")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
+ *
+ * Class IngestController
  */
 class IngestController extends Controller
 {
+    private $predefinedHeaders = [
+        'Content-Type' => 'text/xml',
+    ];
+
     /**
-     * @Route("/createMediaPackage", methods="POST")
+     * @Route("/createMediaPackage")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function createMediaPackageAction(Request $request)
     {
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $factoryService = $this->get('pumukitschema.factory');
-        if ($seriesId = $request->request->get('series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
-            if (!$series) {
-                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-            }
-        } else {
-            $series = $factoryService->createSeries($this->getUser());
-        }
-        $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
-        $mediaPackage = $this->generateXML($multimediaObject);
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = [];
+            $customParameters = [
+                'series' => false,
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+            $response = $apiService->createMediaPackage($requestParameters, $this->getUser());
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+        }
     }
 
     /**
-     * @Route("/addAttachment", methods="POST")
+     * @Route("/addAttachment")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function addAttachmentAction(Request $request)
     {
-        $mediapackage = $request->request->get('mediaPackage');
-        if (!$mediapackage) {
-            $multimediaObjectId = $request->request->get('id');
-
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
-        $flavor = $request->request->get('flavor');
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$request->files->has('BODY')) {
-            return new Response('No attachment file', Response::HTTP_BAD_REQUEST);
-        }
-
         try {
-            $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            $apiService = $this->get('pumukit_external_api.api_service');
+
+            $requestParameters = $this->getBasicRequestParameters($request);
+
+            $response = $apiService->addAttachment($requestParameters);
+
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
-
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-        }
-
-        $materialMetadata = [
-            'mime_type' => $flavor,
-        ];
-        $materialService = $this->get('pumukitschema.material');
-        $multimediaObject = $materialService->addMaterialFile($multimediaObject, $request->files->get('BODY'), $materialMetadata);
-        $mediaPackage = $this->generateXML($multimediaObject);
-
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
-     * @Route("/addTrack", methods="POST")
+     * @Route("/addTrack")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function addTrackAction(Request $request)
     {
-        $mediapackage = $request->request->get('mediaPackage');
-        if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
-        $flavor = $request->request->get('flavor');
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$request->files->has('BODY')) {
-            return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
-        }
-
         try {
-            $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-        }
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
 
-        $profile = $request->get('profile', 'master_copy');
-        $priority = $request->get('priority', 2);
-        $language = $request->get('language', 'en');
-        $description = $request->get('description', '');
-        $jobService = $this->get('pumukitencoder.job');
-        // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
-        try {
-            $multimediaObject = $jobService->createTrackFromLocalHardDrive($multimediaObject, $request->files->get('BODY'), $profile, $priority, $language, $description);
-        } catch (\Exception $e) {
-            return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
+            $customParameters = [
+                'profile' => 'master_copy',
+                'priority' => 2,
+                'language' => 'en',
+                'description' => '',
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+            $response = $apiService->addTrack($requestParameters);
+
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
-
-        $mediaPackage = $this->generateXML($multimediaObject);
-
-        return new Response($mediaPackage->asXml(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
-     * @Route("/addCatalog", methods="POST")
+     * @Route("/addCatalog")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function addCatalogAction(Request $request)
     {
-        $mediapackage = $request->request->get('mediaPackage');
-        if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
+            $response = $apiService->addCatalog($requestParameters);
 
-        $flavor = $request->request->get('flavor');
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
-
-        if (!$request->files->has('BODY')) {
-            return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
-        }
-
-        return new Response('OK', Response::HTTP_OK);
     }
 
     /**
-     * @Route("/addDCCatalog", methods="POST")
+     * @Route("/addDCCatalog")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function addDCCatalogAction(Request $request)
     {
-        $mediapackage = $request->request->get('mediaPackage');
-        if (!$mediapackage) {
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        $flavor = $request->request->get('flavor');
-        if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-        if (0 !== strpos($flavor, 'dublincore/')) {
-            return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$request->files->has('BODY')) {
-            return new Response('No catalog file uploaded', Response::HTTP_BAD_REQUEST);
-        }
-
-        $catalog = $request->files->get('BODY');
-        //libxml_use_internal_errors(true);
         try {
-            $catalog = simplexml_load_file($catalog, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
+            $response = $apiService->addDCCatalog($requestParameters, $this->getUser());
+
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
-
-        try {
-            $mediapackage = simplexml_load_string($mediapackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $multimediaObject = $dm->getRepository('PumukitSchemaBundle:MultimediaObject')->findOneBy(['_id' => (string) $mediapackage['id']]);
-        if (!$multimediaObject) {
-            return new Response('The multimedia object with "id" "'.(string) $mediapackage['id'].'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-        }
-
-        $namespacesMetadata = $catalog->getNamespaces(true);
-        $catalogDcterms = $catalog->children($namespacesMetadata['dcterms']);
-        if (0 === strpos($flavor, 'dublincore/series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => (string) $catalogDcterms->identifier]);
-            if (!$series) {
-                $factory = $this->get('pumukitschema.factory');
-                $series = $factory->createSeries($this->getUser());
-            }
-            $multimediaObject->setSeries($series);
-            $dm->persist($multimediaObject);
-            $dm->flush();
-        } elseif (0 === strpos($flavor, 'dublincore/episode')) {
-            if ($newTitle = (string) $catalogDcterms->title) {
-                foreach ($multimediaObject->getI18nTitle() as $language => $title) {
-                    $multimediaObject->setTitle($newTitle, $language);
-                }
-            }
-            if ($newDescription = (string) $catalogDcterms->description) {
-                foreach ($multimediaObject->getI18nDescription() as $language => $description) {
-                    $multimediaObject->setDescription($newDescription, $language);
-                }
-            }
-            if ($newCopyright = (string) $catalogDcterms->accessRights) {
-                $multimediaObject->setCopyright($newCopyright);
-            }
-            if ($newLicense = (string) $catalogDcterms->license) {
-                $multimediaObject->setLicense($newLicense);
-            }
-            if ($newRecordDate = (string) $catalogDcterms->created) {
-                $multimediaObject->setRecordDate(new \DateTime($newRecordDate));
-            }
-            $personService = $this->get('pumukitschema.person');
-            foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
-                $roleCod = $role->getCod();
-                foreach ($catalogDcterms->{$roleCod} as $personName) {
-                    $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
-                    if (!$newPerson) {
-                        $newPerson = new Person();
-                        $newPerson->setName((string) $personName);
-                    }
-                    $multimediaObject = $personService->createRelationPerson($newPerson, $role, $multimediaObject);
-                }
-            }
-
-            $dm->persist($multimediaObject);
-            $dm->flush();
-        }
-
-        $mediaPackage = $this->generateXML($multimediaObject);
-
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
     }
 
     /**
-     * @Route("/addMediaPackage", methods="POST")
+     * @Route("/addMediaPackage")
+     *
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return Response
      */
     public function addMediaPackageAction(Request $request)
     {
@@ -255,103 +165,123 @@ class IngestController extends Controller
             return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
         }
 
-        //createMediaPackage logic
-        $dm = $this->get('doctrine_mongodb')->getManager();
-        $factoryService = $this->get('pumukitschema.factory');
-        if ($seriesId = $request->request->get('series')) {
-            $series = $dm->getRepository('PumukitSchemaBundle:Series')->findOneBy(['_id' => $seriesId]);
-            if (!$series) {
-                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
-            }
-        } else {
-            $series = $factoryService->createSeries($this->getUser());
+        $requestParameters = [
+            'flavor' => $request->request->get('flavor'),
+            'body' => $request->files->get('BODY'),
+        ];
+
+        $customParameters = [
+            'series' => false,
+            'accessRights' => false,
+            'title' => '',
+            'description' => '',
+            'profile' => 'master_copy',
+            'priority' => 2,
+            'language' => 'en',
+        ];
+
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+
+            $requestParameters = $this->getPeopleFromRoles($request, $requestParameters);
+
+            $response = $apiService->addMediaPackage($requestParameters, $this->getUser());
+
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
-        $multimediaObject = $factoryService->createMultimediaObject($series, true, $this->getUser());
-
-        //Add catalogDC logic (kinda)
-        if ($copyright = $request->request->get('accessRights')) {
-            $multimediaObject->setCopyright($copyright);
-        }
-
-        $personService = $this->get('pumukitschema.person');
-        foreach ($dm->getRepository('PumukitSchemaBundle:Role')->findAll() as $role) {
-            $roleCod = $role->getCod();
-            $peopleNames = $request->request->get($roleCod);
-            if (!$peopleNames) {
-                continue;
-            }
-            if (!is_array($peopleNames)) {
-                $peopleNames = [$peopleNames];
-            }
-            foreach ($peopleNames as $personName) {
-                $newPerson = $dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => (string) $personName]);
-                if (!$newPerson) {
-                    $newPerson = new Person();
-                    $newPerson->setName((string) $personName);
-                }
-                $multimediaObject = $personService->createRelationPerson($newPerson, $role, $multimediaObject);
-            }
-        }
-
-        if ($newTitle = $request->request->get('title')) {
-            foreach ($multimediaObject->getI18nTitle() as $language => $title) {
-                $multimediaObject->setTitle($newTitle, $language);
-            }
-        }
-
-        if ($newDescription = $request->request->get('description')) {
-            foreach ($multimediaObject->getI18nDescription() as $language => $description) {
-                $multimediaObject->setDescription($newDescription, $language);
-            }
-        }
-
-        // Add track
-        $flavors = $request->request->get('flavor');
-        $tracks = $request->files->get('BODY');
-        if ($flavors && $tracks) {
-            // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
-            $profile = $request->get('profile', 'master_copy');
-            $priority = $request->get('priority', 2);
-            $language = $request->get('language', 'en');
-            $description = '';
-            $jobService = $this->get('pumukitencoder.job');
-            if (!is_array($tracks)) {
-                $tracks = [$tracks];
-            }
-            foreach ($tracks as $track) {
-                try {
-                    $multimediaObject = $jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
-                } catch (\Exception $e) {
-                    return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
-                }
-            }
-        }
-
-        $dm->persist($multimediaObject);
-        $dm->flush();
-        $mediaPackage = $this->generateXML($multimediaObject);
-
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK);
     }
 
-    protected function generateXML(MultimediaObject $multimediaObject)
+    /**
+     * @param Request $request
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    private function getBasicRequestParameters(Request $request)
     {
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId(), null);
-        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'), null);
+        return $this->validatePostData($request->request->get('mediaPackage'), $request->request->get('flavor'), $request->files->get('BODY'));
+    }
 
-        foreach ($multimediaObject->getMaterials() as $material) {
-            $attachment = $xml->attachments->addChild('attachment');
-            $attachment->addAttribute('id', $material->getId());
-            $attachment->addChild('mimetype', $material->getMimeType());
-            $tags = $attachment->addChild('tags');
-            foreach ($material->getTags() as $tag) {
-                $tags->addChild('tag', $tag);
-            }
-            $attachment->addChild('url', '');
-            $attachment->addChild('size', '');
+    /**
+     * NOTE: Order of parameters its very important on service to assign the correct variable using list.
+     *
+     * @param Request $request
+     * @param array   $requestParameters
+     * @param array   $customRequestParameters
+     *
+     * @return array
+     */
+    private function getCustomParameterFromRequest(Request $request, array $requestParameters, array $customRequestParameters)
+    {
+        foreach ($customRequestParameters as $key => $defaultValue) {
+            $requestParameters[$key] = $request->request->get($key, $defaultValue);
         }
 
-        return $xml;
+        return $requestParameters;
+    }
+
+    /**
+     * @param Request $request
+     * @param array   $requestParameters
+     *
+     * @return array
+     */
+    private function getPeopleFromRoles(Request $request, array $requestParameters)
+    {
+        $documentManager = $this->get('doctrine_mongodb.odm.document_manager');
+        $roles = [];
+        foreach ($documentManager->getRepository(Role::class)->findAll() as $role) {
+            $roles[$role->getCod()] = $request->request->get($role->getCod());
+        }
+
+        $requestParameters['roles'] = $roles;
+
+        return $requestParameters;
+    }
+
+    /**
+     * @param string $mediaPackage
+     * @param string $flavor
+     * @param string $body
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    private function validatePostData($mediaPackage, $flavor, $body)
+    {
+        if (!$mediaPackage) {
+            throw new \Exception("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$flavor) {
+            throw new \Exception("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$body) {
+            throw new \Exception('No attachment file', Response::HTTP_BAD_REQUEST);
+        }
+
+        return [
+            'mediaPackage' => $mediaPackage,
+            'flavor' => $flavor,
+            'body' => $body,
+        ];
+    }
+
+    /**
+     * @param string $response
+     * @param int    $status
+     * @param array  $headers
+     *
+     * @return Response
+     */
+    private function generateResponse($response, $status, array $headers)
+    {
+        return new Response($response, $status, $headers);
     }
 }
