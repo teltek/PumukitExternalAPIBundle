@@ -28,11 +28,7 @@ class IngestController extends Controller
      */
     public function createMediaPackageAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
-            return $requestParameters;
-        }
-
+        $requestParameters = [];
         $customParameters = [
             'series' => false,
         ];

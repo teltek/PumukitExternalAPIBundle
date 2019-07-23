@@ -91,6 +91,8 @@ class APIService
         $this->jobService = $jobService;
         $this->personService = $personService;
         $this->tagService = $tagService;
+
+
     }
 
     /**
@@ -101,7 +103,7 @@ class APIService
      *
      * @return Response
      */
-    public function createMediaPackage(array $requestParameters, User $user)
+    public function createMediaPackage(array $requestParameters, User $user = null)
     {
         if ($seriesId = $requestParameters['series']) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
@@ -207,7 +209,7 @@ class APIService
      *
      * @return Response
      */
-    public function addDCCatalog(array $requestParameters, User $user)
+    public function addDCCatalog(array $requestParameters, User $user = null)
     {
         [$mediaPackage, $flavor, $body] = array_values($requestParameters);
 
@@ -283,7 +285,7 @@ class APIService
      *
      * @return Response
      */
-    public function addMediaPackage(array $requestParameters, User $user)
+    public function addMediaPackage(array $requestParameters, User $user = null)
     {
         [$mediaPackage, $flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
 
