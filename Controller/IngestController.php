@@ -50,7 +50,7 @@ class IngestController extends Controller
     public function addAttachmentAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
+        if ($requestParameters instanceof Response) {
             return $requestParameters;
         }
 
@@ -71,7 +71,7 @@ class IngestController extends Controller
     public function addTrackAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
+        if ($requestParameters instanceof Response) {
             return $requestParameters;
         }
 
@@ -99,7 +99,7 @@ class IngestController extends Controller
     public function addCatalogAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
+        if ($requestParameters instanceof Response) {
             return $requestParameters;
         }
 
@@ -120,7 +120,7 @@ class IngestController extends Controller
     public function addDCCatalogAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
+        if ($requestParameters instanceof Response) {
             return $requestParameters;
         }
 
@@ -140,10 +140,19 @@ class IngestController extends Controller
      */
     public function addMediaPackageAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if($requestParameters instanceof Response) {
-            return $requestParameters;
+        $flavor = $request->request->get('flavor');
+        if (!$flavor) {
+            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
+
+        if (!$request->files->has('BODY')) {
+            return new Response('No track file uploaded', Response::HTTP_BAD_REQUEST);
+        }
+
+        $requestParameters = [
+            'flavor' => $request->request->get('flavor'),
+            'body' => $request->files->get('BODY'),
+        ];
 
         $customParameters = [
             'series' => false,
@@ -174,7 +183,7 @@ class IngestController extends Controller
     }
 
     /**
-     * NOTE: Order of parameters its very important on service to assign the correct variable using list
+     * NOTE: Order of parameters its very important on service to assign the correct variable using list.
      *
      * @param Request $request
      * @param array   $requestParameters

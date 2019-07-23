@@ -91,8 +91,6 @@ class APIService
         $this->jobService = $jobService;
         $this->personService = $personService;
         $this->tagService = $tagService;
-
-
     }
 
     /**
@@ -287,7 +285,7 @@ class APIService
      */
     public function addMediaPackage(array $requestParameters, User $user = null)
     {
-        [$mediaPackage, $flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
+        [$flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
 
         if ($seriesId) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
