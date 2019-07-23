@@ -41,9 +41,9 @@ class IngestController extends Controller
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
             $response = $apiService->createMediaPackage($requestParameters, $this->getUser());
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -65,9 +65,9 @@ class IngestController extends Controller
 
             $response = $apiService->addAttachment($requestParameters);
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -95,9 +95,9 @@ class IngestController extends Controller
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
             $response = $apiService->addTrack($requestParameters);
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -117,9 +117,9 @@ class IngestController extends Controller
             $requestParameters = $this->getBasicRequestParameters($request);
             $response = $apiService->addCatalog($requestParameters);
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -139,9 +139,9 @@ class IngestController extends Controller
             $requestParameters = $this->getBasicRequestParameters($request);
             $response = $apiService->addDCCatalog($requestParameters, $this->getUser());
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -188,9 +188,9 @@ class IngestController extends Controller
 
             $response = $apiService->addMediaPackage($requestParameters, $this->getUser());
 
-            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return new Response($exception->getMessage(), $exception->getCode());
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
         }
     }
 
@@ -244,9 +244,9 @@ class IngestController extends Controller
     }
 
     /**
-     * @param $mediaPackage
-     * @param $flavor
-     * @param $body
+     * @param string $mediaPackage
+     * @param string $flavor
+     * @param string $body
      *
      * @throws \Exception
      *
@@ -271,5 +271,17 @@ class IngestController extends Controller
             'flavor' => $flavor,
             'body' => $body,
         ];
+    }
+
+    /**
+     * @param string $response
+     * @param int    $status
+     * @param array  $headers
+     *
+     * @return Response
+     */
+    private function generateResponse($response, $status, array $headers)
+    {
+        return new Response($response, $status, $headers);
     }
 }

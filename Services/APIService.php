@@ -94,12 +94,12 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     * @param User  $user
+     * @param array     $requestParameters
+     * @param null|User $user
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function createMediaPackage(array $requestParameters, User $user = null)
     {
@@ -124,7 +124,7 @@ class APIService
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function addAttachment(array $requestParameters)
     {
@@ -146,7 +146,7 @@ class APIService
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function addTrack(array $requestParameters)
     {
@@ -167,7 +167,7 @@ class APIService
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function addCatalog(array $requestParameters)
     {
@@ -198,12 +198,12 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     * @param User  $user
+     * @param array     $requestParameters
+     * @param null|User $user
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function addDCCatalog(array $requestParameters, User $user = null)
     {
@@ -270,12 +270,12 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     * @param User  $user
+     * @param array     $requestParameters
+     * @param null|User $user
      *
      * @throws \Exception
      *
-     * @return Response
+     * @return mixed
      */
     public function addMediaPackage(array $requestParameters, User $user = null)
     {
@@ -372,7 +372,7 @@ class APIService
     }
 
     /**
-     * @param mixed $mediaPackage
+     * @param string $mediaPackage
      *
      * @throws \Exception
      *
