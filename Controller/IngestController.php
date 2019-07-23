@@ -29,6 +29,10 @@ class IngestController extends Controller
     public function createMediaPackageAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $customParameters = [
             'series' => false,
         ];
@@ -50,6 +54,10 @@ class IngestController extends Controller
     public function addAttachmentAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $apiService = $this->get('pumukit_external_api.api_service');
 
         return $apiService->addAttachment($requestParameters);
@@ -67,6 +75,10 @@ class IngestController extends Controller
     public function addTrackAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $customParameters = [
             'profile' => 'master_copy',
             'priority' => 2,
@@ -91,6 +103,10 @@ class IngestController extends Controller
     public function addCatalogAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $apiService = $this->get('pumukit_external_api.api_service');
 
         return $apiService->addCatalog($requestParameters);
@@ -108,6 +124,10 @@ class IngestController extends Controller
     public function addDCCatalogAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $apiService = $this->get('pumukit_external_api.api_service');
 
         return $apiService->addDCCatalog($requestParameters, $this->getUser());
@@ -125,6 +145,10 @@ class IngestController extends Controller
     public function addMediaPackageAction(Request $request)
     {
         $requestParameters = $this->getBasicRequestParameters($request);
+        if($requestParameters instanceof Response) {
+            return $requestParameters;
+        }
+
         $customParameters = [
             'series' => false,
             'accessRights' => false,

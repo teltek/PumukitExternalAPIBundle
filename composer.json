@@ -3,28 +3,28 @@
     "type": "symfony-bundle",
     "description": "PuMuKIT external ingest API",
     "keywords": [
-	"api",
-	"symfony",
-	"bundle",
-	"pumukit"
+        "api",
+        "symfony",
+        "bundle",
+        "pumukit"
     ],
     "homepage": "https://gitlab.teltek.es/pumukit/PumukitExternalAPIBundle.git",
     "license": "proprietary",
     "authors": [
-	        {
-		    "name": "Teltek Team",
-		    "homepage": "http://teltek.es"
-		}
+        {
+            "name": "Teltek Team",
+            "homepage": "http://teltek.es"
+        }
     ],
     "require": {
-	    "php": ">=5.5.9",
+        "php": ">=5.5.9",
         "ext-simplexml": "*",
         "ext-json": "*",
         "ext-libxml": "*"
     },
     "autoload": {
-	"psr-4": {
-	    "Pumukit\\ExternalAPIBundle\\": ""
-	}
+        "psr-4": {
+            "Pumukit\\ExternalAPIBundle\\": ""
+        }
     }
 }
