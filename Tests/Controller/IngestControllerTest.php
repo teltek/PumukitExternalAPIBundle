@@ -391,8 +391,7 @@ class IngestControllerTest extends WebTestCase
             'series' => $series->getId(),
         ];
         $trackFile = $this->generateTrackFile();
-        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data','HTTPS' => 'https', 'HTTP_HOST' => 'localhost']);
-        var_dump(        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data','HTTPS' => 'https', 'HTTP_HOST' => 'localhost']));
+        $client->request('POST', '/api/ingest/addMediaPackage', $postParams, ['BODY' => $trackFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $this->assertInstanceOf('SimpleXMLElement', $mediaPackage);
