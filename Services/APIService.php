@@ -106,7 +106,7 @@ class APIService
         if ($seriesId = $requestParameters['series']) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
-                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
+                throw new \Exception('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
         } else {
             $series = $this->factoryService->createSeries($user);
@@ -116,7 +116,7 @@ class APIService
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
+        return $mediaPackage->asXML();
     }
 
     /**
@@ -138,7 +138,7 @@ class APIService
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
+        return $mediaPackage->asXML();
     }
 
     /**
@@ -155,15 +155,11 @@ class APIService
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
         // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
-        try {
-            $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $body, $profile, $priority, $language, $description);
-        } catch (\Exception $e) {
-            return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $body, $profile, $priority, $language, $description);
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXml(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
+        return $mediaPackage->asXML();
     }
 
     /**
@@ -184,19 +180,21 @@ class APIService
                 try {
                     $body = simplexml_load_file($body, 'SimpleXMLElement', LIBXML_NOCDATA);
                 } catch (\Exception $e) {
-                    return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+                    throw new \Exception($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
             } else {
                 $body = json_decode(file_get_contents($body), true);
                 if (JSON_ERROR_NONE !== json_last_error()) {
-                    return new Response(json_last_error_msg(), Response::HTTP_INTERNAL_SERVER_ERROR);
+                    throw new \Exception(json_last_error_msg(), Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
             }
 
             $this->processPumukitEpisode($multimediaObject, $body);
         }
 
-        return new Response('OK', Response::HTTP_OK);
+        $mediaPackage = $this->generateXML($multimediaObject);
+
+        return $mediaPackage->asXML();
     }
 
     /**
@@ -214,14 +212,10 @@ class APIService
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
         if (0 !== strpos($flavor, 'dublincore/')) {
-            return new Response("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+            throw new \Exception("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
-        try {
-            $body = simplexml_load_file($body, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            return new Response($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        $body = simplexml_load_file($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);
@@ -272,7 +266,7 @@ class APIService
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK, ['Content-Type' => 'text/xml']);
+        return $mediaPackage->asXML();
     }
 
     /**
@@ -290,7 +284,7 @@ class APIService
         if ($seriesId) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
             if (!$series) {
-                return new Response('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
+                throw new \Exception('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
         } else {
             $series = $this->factoryService->createSeries($user);
@@ -339,11 +333,7 @@ class APIService
                 $body = [$body];
             }
             foreach ($body as $track) {
-                try {
-                    $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
-                } catch (\Exception $e) {
-                    return new Response('Upload failed. The file is not a valid video or audio file.', Response::HTTP_INTERNAL_SERVER_ERROR);
-                }
+                $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
             }
         }
 
@@ -352,7 +342,7 @@ class APIService
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
-        return new Response($mediaPackage->asXML(), Response::HTTP_OK);
+        return $mediaPackage->asXML();
     }
 
     /**

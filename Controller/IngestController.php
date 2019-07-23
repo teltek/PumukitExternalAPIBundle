@@ -17,6 +17,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class IngestController extends Controller
 {
+    private $predefinedHeaders = [
+        'Content-Type' => 'text/xml',
+    ];
+
     /**
      * @Route("/createMediaPackage")
      *
@@ -28,14 +32,19 @@ class IngestController extends Controller
      */
     public function createMediaPackageAction(Request $request)
     {
-        $requestParameters = [];
-        $customParameters = [
-            'series' => false,
-        ];
-        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
-        $apiService = $this->get('pumukit_external_api.api_service');
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = [];
+            $customParameters = [
+                'series' => false,
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+            $response = $apiService->createMediaPackage($requestParameters, $this->getUser());
 
-        return $apiService->createMediaPackage($requestParameters, $this->getUser());
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
+        }
     }
 
     /**
@@ -49,14 +58,17 @@ class IngestController extends Controller
      */
     public function addAttachmentAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if ($requestParameters instanceof Response) {
-            return $requestParameters;
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+
+            $requestParameters = $this->getBasicRequestParameters($request);
+
+            $response = $apiService->addAttachment($requestParameters);
+
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
         }
-
-        $apiService = $this->get('pumukit_external_api.api_service');
-
-        return $apiService->addAttachment($requestParameters);
     }
 
     /**
@@ -70,21 +82,23 @@ class IngestController extends Controller
      */
     public function addTrackAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if ($requestParameters instanceof Response) {
-            return $requestParameters;
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
+
+            $customParameters = [
+                'profile' => 'master_copy',
+                'priority' => 2,
+                'language' => 'en',
+                'description' => '',
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
+            $response = $apiService->addTrack($requestParameters);
+
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
         }
-
-        $customParameters = [
-            'profile' => 'master_copy',
-            'priority' => 2,
-            'language' => 'en',
-            'description' => '',
-        ];
-        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
-        $apiService = $this->get('pumukit_external_api.api_service');
-
-        return $apiService->addTrack($requestParameters);
     }
 
     /**
@@ -98,14 +112,15 @@ class IngestController extends Controller
      */
     public function addCatalogAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if ($requestParameters instanceof Response) {
-            return $requestParameters;
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
+            $response = $apiService->addCatalog($requestParameters);
+
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
         }
-
-        $apiService = $this->get('pumukit_external_api.api_service');
-
-        return $apiService->addCatalog($requestParameters);
     }
 
     /**
@@ -119,14 +134,15 @@ class IngestController extends Controller
      */
     public function addDCCatalogAction(Request $request)
     {
-        $requestParameters = $this->getBasicRequestParameters($request);
-        if ($requestParameters instanceof Response) {
-            return $requestParameters;
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getBasicRequestParameters($request);
+            $response = $apiService->addDCCatalog($requestParameters, $this->getUser());
+
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
         }
-
-        $apiService = $this->get('pumukit_external_api.api_service');
-
-        return $apiService->addDCCatalog($requestParameters, $this->getUser());
     }
 
     /**
@@ -163,19 +179,27 @@ class IngestController extends Controller
             'priority' => 2,
             'language' => 'en',
         ];
-        $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
 
-        $requestParameters = $this->getPeopleFromRoles($request, $requestParameters);
+        try {
+            $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
 
-        $apiService = $this->get('pumukit_external_api.api_service');
+            $requestParameters = $this->getPeopleFromRoles($request, $requestParameters);
 
-        return $apiService->addMediaPackage($requestParameters, $this->getUser());
+            $response = $apiService->addMediaPackage($requestParameters, $this->getUser());
+
+            return new Response($response, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return new Response($exception->getMessage(), $exception->getCode());
+        }
     }
 
     /**
      * @param Request $request
      *
-     * @return array|Response
+     * @throws \Exception
+     *
+     * @return array
      */
     private function getBasicRequestParameters(Request $request)
     {
@@ -220,24 +244,26 @@ class IngestController extends Controller
     }
 
     /**
-     * @param mixed  $mediaPackage
-     * @param string $flavor
-     * @param mixed  $body
+     * @param $mediaPackage
+     * @param $flavor
+     * @param $body
      *
-     * @return array|Response
+     * @throws \Exception
+     *
+     * @return array
      */
     private function validatePostData($mediaPackage, $flavor, $body)
     {
         if (!$mediaPackage) {
-            return new Response("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
+            throw new \Exception("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$flavor) {
-            return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
+            throw new \Exception("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
         if (!$body) {
-            return new Response('No attachment file', Response::HTTP_BAD_REQUEST);
+            throw new \Exception('No attachment file', Response::HTTP_BAD_REQUEST);
         }
 
         return [
