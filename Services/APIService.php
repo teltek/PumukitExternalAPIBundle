@@ -359,7 +359,8 @@ class APIService
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $xml->addAttribute('id', $multimediaObject->getId());
-        $xml->addAttribute('start', $multimediaObject->getPublicDate()->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'));
+        $publicDate = new \DateTime($multimediaObject->getPublicDate());
+        $xml->addAttribute('start', $publicDate->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'));
 
         foreach ($multimediaObject->getMaterials() as $material) {
             $attachment = $xml->attachments->addChild('attachment');
