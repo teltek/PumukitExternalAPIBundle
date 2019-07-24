@@ -417,7 +417,7 @@ class APIService
                 $method = $this->mappingPumukitData[$key];
 
                 if (!is_array($value)) {
-                    if(in_array($key, $this->mappingDataToDateTime)) {
+                    if (in_array($key, $this->mappingDataToDateTime)) {
                         $value = new \DateTime($value);
                     }
                     $multimediaObject->{$method}($value);
