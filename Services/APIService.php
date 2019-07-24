@@ -67,6 +67,11 @@ class APIService
         'numview' => 'setNumView',
     ];
 
+    private $mappingDataToDateTime = [
+        'record_date' => 'setRecordDate',
+        'public_date' => 'setPublicDate',
+    ];
+
     private $mappingPumukitDataExceptions = [
         'tags',
         'role',
@@ -412,6 +417,9 @@ class APIService
                 $method = $this->mappingPumukitData[$key];
 
                 if (!is_array($value)) {
+                    if(in_array($key, $this->mappingDataToDateTime)) {
+                        $value = new \DateTime($value);
+                    }
                     $multimediaObject->{$method}($value);
                 } else {
                     foreach ($body[$key] as $lang => $data) {
