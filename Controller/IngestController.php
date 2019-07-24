@@ -87,7 +87,7 @@ class IngestController extends Controller
             $requestParameters = $this->getBasicRequestParameters($request);
 
             $customParameters = [
-                'profile' => 'master_copy',
+                'profile' => 'master-copy',
                 'priority' => 2,
                 'language' => 'en',
                 'description' => '',
@@ -175,7 +175,7 @@ class IngestController extends Controller
             'accessRights' => false,
             'title' => '',
             'description' => '',
-            'profile' => 'master_copy',
+            'profile' => 'master-copy',
             'priority' => 2,
             'language' => 'en',
         ];
