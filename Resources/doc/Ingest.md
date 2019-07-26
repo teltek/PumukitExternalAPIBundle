@@ -4,15 +4,15 @@ PuMuKIT /api/ingest Documentation
 Table of Contents
 ---------------------
 
-* [GET /createMediaPackage](#get-createmediapackage)
+* [POST /createMediaPackage](#post-createmediapackage)
 * [POST /addAttachment](#post-addattachment)
 * [POST /addDCCatalog](#post-adddccatalog)
 * [POST /addMediaPackage](#post-addmediapackage)
 * [POST /addTrack](#post-addtrack)
 
-# GET /createMediaPackage
+# POST /createMediaPackage
 **Description:**  
-Creates an empty multimedia object and returns a mediapackage formatted XML.
+Creates an empty multimedia object and returns a mediaPackage formatted XML.
 
 **Path parameters:**  
 *NONE*
@@ -42,7 +42,7 @@ Adds an attachment to a given multimedia object from file.
 
 **Required (form) parameters:**  
 *flavor:* Type of attachment (e.g. 'srt' for .srt type subtitles).  
-*mediaPackage:* The edited mediapackage as XML.
+*mediaPackage:* The edited mediaPackage as XML.
 
 **BODY (upload) parameter:**  
 The attachment file.
@@ -71,7 +71,7 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 *NONE*
 
 **Required (form) parameters:**  
-*mediaPackage:* The mediapackage to modify as XML.  
+*mediaPackage:* The mediaPackage to modify as XML.  
 *dublincore:* DublinCore catalog as XML.  
 *flavor:* DublinCore Flavor (Only dublincore/episode and dublincore/series are supported at the moment).
 
@@ -99,7 +99,7 @@ curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/ap
 
 # POST /addMediaPackage
 **Description:**  
-Creates mediapackage from given media tracks and dublincore metadata.
+Creates mediaPackage from given media tracks and dublincore metadata.
 
 **Path parameters:**  
 *NONE*
@@ -140,14 +140,14 @@ curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es
 
 # POST /addTrack
 **Description:**  
-Adds track file to given mediapackage.
+Adds track file to given mediaPackage.
 
 **Path parameters:**  
 *NONE*
 
 **Required (form) parameters:**  
 *flavor:* The kind of media track (see /addTrack). If several tracks are added, this can be an array of flavors (each value corresponding to the corresponding track on the BODY parameter).  
-*mediaPackage:* The mediapackage as XML.
+*mediaPackage:* The mediaPackage as XML.
 
 **BODY (upload) parameter:**  
 The track file.
