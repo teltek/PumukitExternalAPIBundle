@@ -359,7 +359,7 @@ class APIService
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $xml->addAttribute('id', $multimediaObject->getId());
-        $publicDate = new \DateTime($multimediaObject->getPublicDate());
+        $publicDate = $multimediaObject->getPublicDate();
         $xml->addAttribute('start', $publicDate->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'));
 
         foreach ($multimediaObject->getMaterials() as $material) {
@@ -416,10 +416,11 @@ class APIService
         foreach ($body as $key => $value) {
             if (array_key_exists($key, $this->mappingPumukitData)) {
                 $method = $this->mappingPumukitData[$key];
-
                 if (!is_array($value)) {
-                    if (in_array($key, $this->mappingDataToDateTime)) {
-                        $value = new \DateTime($value);
+                    if (in_array($key, array_keys($this->mappingDataToDateTime))) {
+                        if (is_string($value)) {
+                            $value = new \DateTime($value);
+                        }
                     }
                     $multimediaObject->{$method}($value);
                 } else {

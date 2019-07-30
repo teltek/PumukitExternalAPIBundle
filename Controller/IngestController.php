@@ -86,8 +86,9 @@ class IngestController extends Controller
             $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getBasicRequestParameters($request);
 
+            $profileService = $this->get('pumukitencoder.profile');
             $customParameters = [
-                'profile' => 'master-copy',
+                'profile' => $profileService->getDefaultMasterProfile(),
                 'priority' => 2,
                 'language' => 'en',
                 'description' => '',
