@@ -3,7 +3,6 @@
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
-use Pumukit\EncoderBundle\Services\JobService;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
@@ -25,9 +24,6 @@ class IngestControllerTest extends WebTestCase
      */
     private $dm;
 
-    /**
-     * @var JobService
-     */
     private $jobService;
 
     /**
@@ -481,7 +477,7 @@ class IngestControllerTest extends WebTestCase
     }
 
     /**
-     * @param $localFile
+     * @param string $localFile
      *
      * @return UploadedFile
      */

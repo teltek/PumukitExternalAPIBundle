@@ -3,17 +3,16 @@
 namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Pumukit\CoreBundle\Services\ImportMappingDataService;
 use Pumukit\EncoderBundle\Services\JobService;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
-use Pumukit\SchemaBundle\Document\Tag;
 use Pumukit\SchemaBundle\Document\User;
 use Pumukit\SchemaBundle\Services\FactoryService;
 use Pumukit\SchemaBundle\Services\MaterialService;
 use Pumukit\SchemaBundle\Services\PersonService;
-use Pumukit\SchemaBundle\Services\TagService;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -21,7 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class APIService
 {
-    const PUMUKIT_EPISODE = 'pumukit/episode';
+    public const PUMUKIT_EPISODE = 'pumukit/episode';
     /**
      * @var DocumentManager
      */
@@ -47,64 +46,20 @@ class APIService
      */
     private $personService;
 
-    /**
-     * @var TagService
-     */
-    private $tagService;
+    private $importMappingDataService;
 
-    private $mappingPumukitData = [
-        'status' => 'setStatus',
-        'record_date' => 'setRecordDate',
-        'public_date' => 'setPublicDate',
-        'title' => 'setTitle',
-        'subtitle' => 'setSubtitle',
-        'description' => 'setDescription',
-        'line2' => 'setLine2',
-        'copyright' => 'setCopyright',
-        'license' => 'setLicense',
-        'keywords' => 'setKeywords',
-        'properties' => 'setProperty',
-        'numview' => 'setNumView',
-    ];
-
-    private $mappingDataToDateTime = [
-        'record_date' => 'setRecordDate',
-        'public_date' => 'setPublicDate',
-    ];
-
-    private $mappingPumukitDataExceptions = [
-        'tags',
-        'role',
-        'people',
-    ];
-
-    /**
-     * APIService constructor.
-     *
-     * @param DocumentManager $documentManager
-     * @param FactoryService  $factoryService
-     * @param MaterialService $materialService
-     * @param JobService      $jobService
-     * @param PersonService   $personService
-     * @param TagService      $tagService
-     */
-    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, TagService $tagService)
+    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, ImportMappingDataService $importMappingDataService)
     {
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
         $this->materialService = $materialService;
         $this->jobService = $jobService;
         $this->personService = $personService;
-        $this->tagService = $tagService;
+        $this->importMappingDataService = $importMappingDataService;
     }
 
     /**
-     * @param array     $requestParameters
-     * @param null|User $user
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function createMediaPackage(array $requestParameters, User $user = null)
     {
@@ -125,11 +80,7 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function addAttachment(array $requestParameters)
     {
@@ -147,11 +98,7 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function addTrack(array $requestParameters)
     {
@@ -168,11 +115,7 @@ class APIService
     }
 
     /**
-     * @param array $requestParameters
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function addCatalog(array $requestParameters)
     {
@@ -183,7 +126,7 @@ class APIService
         if (self::PUMUKIT_EPISODE === $flavor) {
             if (in_array($body->getMimeType(), ['application/xml', 'text/xml'])) {
                 try {
-                    $body = simplexml_load_file($body, 'SimpleXMLElement', LIBXML_NOCDATA);
+                    $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
                 } catch (\Exception $e) {
                     throw new \Exception($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
@@ -194,7 +137,7 @@ class APIService
                 }
             }
 
-            $this->processPumukitEpisode($multimediaObject, $body);
+            $this->importMappingDataService->insertMappingData($multimediaObject, $body);
         }
 
         $mediaPackage = $this->generateXML($multimediaObject);
@@ -203,12 +146,7 @@ class APIService
     }
 
     /**
-     * @param array     $requestParameters
-     * @param null|User $user
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function addDCCatalog(array $requestParameters, User $user = null)
     {
@@ -220,7 +158,7 @@ class APIService
             throw new \Exception("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
-        $body = simplexml_load_file($body, 'SimpleXMLElement', LIBXML_NOCDATA);
+        $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);
@@ -275,12 +213,7 @@ class APIService
     }
 
     /**
-     * @param array     $requestParameters
-     * @param null|User $user
-     *
      * @throws \Exception
-     *
-     * @return mixed
      */
     public function addMediaPackage(array $requestParameters, User $user = null)
     {
@@ -350,12 +283,7 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @param MultimediaObject $multimediaObject
-     *
-     * @return \SimpleXMLElement
-     */
-    private function generateXML(MultimediaObject $multimediaObject)
+    private function generateXML(MultimediaObject $multimediaObject): \SimpleXMLElement
     {
         $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
         $xml->addAttribute('id', $multimediaObject->getId());
@@ -378,13 +306,9 @@ class APIService
     }
 
     /**
-     * @param string $mediaPackage
-     *
      * @throws \Exception
-     *
-     * @return MultimediaObject
      */
-    private function getMultimediaObjectFromMediaPackageXML($mediaPackage)
+    private function getMultimediaObjectFromMediaPackageXML(string $mediaPackage): MultimediaObject
     {
         try {
             $mediaPackage = simplexml_load_string($mediaPackage, 'SimpleXMLElement', LIBXML_NOCDATA);
@@ -403,114 +327,5 @@ class APIService
         }
 
         return $multimediaObject;
-    }
-
-    /**
-     * @param MultimediaObject $multimediaObject
-     * @param array            $body
-     *
-     * @throws \Exception
-     */
-    private function processPumukitEpisode(MultimediaObject $multimediaObject, array $body)
-    {
-        foreach ($body as $key => $value) {
-            if (array_key_exists($key, $this->mappingPumukitData)) {
-                $method = $this->mappingPumukitData[$key];
-                if (!is_array($value)) {
-                    if (in_array($key, array_keys($this->mappingDataToDateTime))) {
-                        if (is_string($value)) {
-                            $value = new \DateTime($value);
-                        }
-                    }
-                    $multimediaObject->{$method}($value);
-                } else {
-                    foreach ($body[$key] as $lang => $data) {
-                        $multimediaObject->{$method}($data, $lang);
-                    }
-                }
-            } elseif (in_array($key, $this->mappingPumukitDataExceptions)) {
-                $this->processPumukitDataExceptions($multimediaObject, $key, $value);
-            }
-        }
-
-        $this->documentManager->flush();
-    }
-
-    /**
-     * @param MultimediaObject $multimediaObject
-     * @param string           $key
-     * @param array            $value
-     *
-     * @throws \Exception
-     */
-    private function processPumukitDataExceptions(MultimediaObject $multimediaObject, $key, $value)
-    {
-        switch ($key) {
-            case 'tags':
-                $this->processPumukitTags($multimediaObject, $value);
-
-                break;
-            case 'role':
-            case 'people':
-                $this->processPumukitRole($multimediaObject, $value);
-
-                break;
-            default:
-        }
-    }
-
-    /**
-     * @param MultimediaObject $multimediaObject
-     * @param array            $value
-     *
-     * @throws \Exception
-     */
-    private function processPumukitTags(MultimediaObject $multimediaObject, array $value)
-    {
-        foreach ($value as $tagCod) {
-            $tag = $this->documentManager->getRepository(Tag::class)->findOneBy([
-                'cod' => $tagCod,
-            ]);
-
-            if ($tag) {
-                $this->tagService->addTagByCodToMultimediaObject($multimediaObject, $tag->getCod(), false);
-            }
-        }
-    }
-
-    /**
-     * @param MultimediaObject $multimediaObject
-     * @param array            $value
-     */
-    private function processPumukitRole(MultimediaObject $multimediaObject, array $value)
-    {
-        foreach ($value as $key => $personEmails) {
-            $person = null;
-            $role = $this->documentManager->getRepository(Role::class)->findOneBy([
-                'cod' => $key,
-            ]);
-
-            foreach ($personEmails as $data) {
-                if (is_array($data)) {
-                    $person = $this->documentManager->getRepository(Person::class)->findOneBy(
-                        [
-                            'email' => $data['email'],
-                        ]
-                    );
-
-                    if (!$person) {
-                        $person = new Person();
-                        $person->setEmail($data['email']);
-                        $person->setName($data['name']);
-                        $this->documentManager->persist($person);
-                        $this->documentManager->flush();
-                    }
-                }
-
-                if ($role && $person) {
-                    $this->personService->createRelationPerson($person, $role, $multimediaObject);
-                }
-            }
-        }
     }
 }
