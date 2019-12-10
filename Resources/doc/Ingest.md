@@ -47,6 +47,9 @@ Adds an attachment to a given multimedia object from file.
 **BODY (upload) parameter:**  
 The attachment file.
 
+**Optional (form) parameters:**  
+*language:* Language field on the attachment.  
+
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
