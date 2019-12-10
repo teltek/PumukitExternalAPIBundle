@@ -84,11 +84,14 @@ class APIService
      */
     public function addAttachment(array $requestParameters)
     {
-        [$mediaPackage, $flavor, $body] = array_values($requestParameters);
+        [$mediaPackage, $flavor, $body, $language] = array_values($requestParameters);
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
-        $materialMetadata = ['mime_type' => $flavor];
+        $materialMetadata = [
+            'mime_type' => $flavor,
+            'language' => $language,
+        ];
 
         $multimediaObject = $this->materialService->addMaterialFile($multimediaObject, $body, $materialMetadata);
 
