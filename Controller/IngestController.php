@@ -23,14 +23,8 @@ class IngestController extends Controller
 
     /**
      * @Route("/createMediaPackage")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function createMediaPackageAction(Request $request)
+    public function createMediaPackageAction(Request $request): ?Response
     {
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
@@ -49,19 +43,17 @@ class IngestController extends Controller
 
     /**
      * @Route("/addAttachment")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function addAttachmentAction(Request $request)
+    public function addAttachmentAction(Request $request): ?Response
     {
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
 
-            $requestParameters = $this->getBasicRequestParameters($request);
+            $basicRequestParameters = $this->getBasicRequestParameters($request);
+            $customParameters = [
+                'language' => 'en',
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $basicRequestParameters, $customParameters);
 
             $response = $apiService->addAttachment($requestParameters);
 
@@ -73,14 +65,8 @@ class IngestController extends Controller
 
     /**
      * @Route("/addTrack")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function addTrackAction(Request $request)
+    public function addTrackAction(Request $request): ?Response
     {
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
@@ -104,14 +90,8 @@ class IngestController extends Controller
 
     /**
      * @Route("/addCatalog")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function addCatalogAction(Request $request)
+    public function addCatalogAction(Request $request): ?Response
     {
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
@@ -126,14 +106,8 @@ class IngestController extends Controller
 
     /**
      * @Route("/addDCCatalog")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function addDCCatalogAction(Request $request)
+    public function addDCCatalogAction(Request $request): ?Response
     {
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
@@ -148,14 +122,8 @@ class IngestController extends Controller
 
     /**
      * @Route("/addMediaPackage")
-     *
-     * @param Request $request
-     *
-     * @throws \Exception
-     *
-     * @return Response
      */
-    public function addMediaPackageAction(Request $request)
+    public function addMediaPackageAction(Request $request): ?Response
     {
         $flavor = $request->request->get('flavor');
         if (!$flavor) {
@@ -171,12 +139,13 @@ class IngestController extends Controller
             'body' => $request->files->get('BODY'),
         ];
 
+        $profileService = $this->get('pumukitencoder.profile');
         $customParameters = [
             'series' => false,
             'accessRights' => false,
             'title' => '',
             'description' => '',
-            'profile' => 'master-copy',
+            'profile' => $profileService->getDefaultMasterProfile(),
             'priority' => 2,
             'language' => 'en',
         ];
@@ -196,27 +165,17 @@ class IngestController extends Controller
     }
 
     /**
-     * @param Request $request
-     *
      * @throws \Exception
-     *
-     * @return array
      */
-    private function getBasicRequestParameters(Request $request)
+    private function getBasicRequestParameters(Request $request): array
     {
         return $this->validatePostData($request->request->get('mediaPackage'), $request->request->get('flavor'), $request->files->get('BODY'));
     }
 
     /**
      * NOTE: Order of parameters its very important on service to assign the correct variable using list.
-     *
-     * @param Request $request
-     * @param array   $requestParameters
-     * @param array   $customRequestParameters
-     *
-     * @return array
      */
-    private function getCustomParameterFromRequest(Request $request, array $requestParameters, array $customRequestParameters)
+    private function getCustomParameterFromRequest(Request $request, array $requestParameters, array $customRequestParameters): array
     {
         foreach ($customRequestParameters as $key => $defaultValue) {
             $requestParameters[$key] = $request->request->get($key, $defaultValue);
@@ -225,18 +184,13 @@ class IngestController extends Controller
         return $requestParameters;
     }
 
-    /**
-     * @param Request $request
-     * @param array   $requestParameters
-     *
-     * @return array
-     */
-    private function getPeopleFromRoles(Request $request, array $requestParameters)
+    private function getPeopleFromRoles(Request $request, array $requestParameters): array
     {
         $documentManager = $this->get('doctrine_mongodb.odm.document_manager');
         $roles = [];
         foreach ($documentManager->getRepository(Role::class)->findAll() as $role) {
-            $roles[$role->getCod()] = $request->request->get($role->getCod());
+            $roleCode = $role->getCod();
+            $roles[$roleCode] = $request->request->get($roleCode);
         }
 
         $requestParameters['roles'] = $roles;
@@ -245,15 +199,13 @@ class IngestController extends Controller
     }
 
     /**
-     * @param string $mediaPackage
-     * @param string $flavor
-     * @param string $body
+     * @param mixed $mediaPackage
+     * @param mixed $flavor
+     * @param mixed $body
      *
      * @throws \Exception
-     *
-     * @return array
      */
-    private function validatePostData($mediaPackage, $flavor, $body)
+    private function validatePostData($mediaPackage, $flavor, $body): array
     {
         if (!$mediaPackage) {
             throw new \Exception("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
@@ -274,14 +226,7 @@ class IngestController extends Controller
         ];
     }
 
-    /**
-     * @param string $response
-     * @param int    $status
-     * @param array  $headers
-     *
-     * @return Response
-     */
-    private function generateResponse($response, $status, array $headers)
+    private function generateResponse($response, $status, array $headers): Response
     {
         return new Response($response, $status, $headers);
     }

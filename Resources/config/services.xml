@@ -14,7 +14,7 @@
             <argument type="service" id="pumukitschema.material"/>
             <argument type="service" id="pumukitencoder.job"/>
             <argument type="service" id="pumukitschema.person"/>
-            <argument type="service" id="pumukitschema.tag"/>
+            <argument type="service" id="pumukitcore.import_mapping_data"/>
         </service>
 
     </services>
