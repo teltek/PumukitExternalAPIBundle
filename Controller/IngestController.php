@@ -49,7 +49,11 @@ class IngestController extends Controller
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
 
-            $requestParameters = $this->getBasicRequestParameters($request);
+            $basicRequestParameters = $this->getBasicRequestParameters($request);
+            $customParameters = [
+                'language' => 'en',
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $basicRequestParameters, $customParameters);
 
             $response = $apiService->addAttachment($requestParameters);
 
