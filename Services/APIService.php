@@ -192,6 +192,8 @@ class APIService
             }
             if ($newRecordDate = (string) $bodyDcterms->created) {
                 $multimediaObject->setRecordDate(new \DateTime($newRecordDate));
+            } else {
+                $multimediaObject->setRecordDate(new \DateTime());
             }
 
             foreach ($this->documentManager->getRepository(Role::class)->findAll() as $role) {
