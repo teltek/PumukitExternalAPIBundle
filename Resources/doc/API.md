@@ -119,4 +119,3 @@ curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es
 | <dcterms:accessRights> | string   |  Video Copyright
 | <dcterms:license>      | string   |  Video License
 | <dcterms:identifier>   | string   |  *NOT USED* on episode request
-
