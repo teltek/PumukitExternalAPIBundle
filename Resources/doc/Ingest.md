@@ -20,6 +20,9 @@ Creates an empty multimedia object and returns a mediaPackage formatted XML.
 **Optional (query) parameters:**  
 *series:* Series id for the multimedia object. If not set a new series will be created.
 
+**Optional (form) parameters:**  
+*seriesTitle:* Set series title  when created in all languages of the platform.  
+
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
@@ -30,7 +33,7 @@ Creates an empty multimedia object and returns a mediaPackage formatted XML.
 
 **Example curl:**  
 ```
-curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/ingest/createMediaPackage
+curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/ingest/createMediaPackage -F 'seriesTitle="seriesTitle"'
 ```
 
 # POST /addAttachment
@@ -78,6 +81,9 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 *dublincore:* DublinCore catalog as XML.  
 *flavor:* DublinCore Flavor (Only dublincore/episode and dublincore/series are supported at the moment).
 
+**Optional (form) parameters:**  
+*seriesTitle:* Set series title  when created in all languages of the platform.  
+
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
@@ -92,12 +98,12 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 # Episode
 curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
--F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml 
+ -F 'seriesTitle="seriesTitle"' -F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml 
 
 # Series
 curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
--F 'flavor="dublincore/series"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/series.xml 
+ -F 'seriesTitle="seriesTitle"' -F 'flavor="dublincore/series"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/series.xml 
 ```
 
 # POST /addMediaPackage
@@ -121,7 +127,9 @@ The track file or files (this can be an array of tracks, each requiring one flav
 *license:* License field on the multimedia object.  
 *publisher:* Person name. Added with publisher role as a new person or an existing one if it already exists. Can be an array of names.  
 *title:* Title field on the multimedia object.  
-*series:* Series id for the multimedia object.
+*series:* Series id for the multimedia object.  
+*seriesTitle:* Set series title when created in all languages of the platform.  
+
 
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
@@ -136,7 +144,7 @@ The track file or files (this can be an array of tracks, each requiring one flav
 ```
 # Multiple tracks
 curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addMediaPackage \
--F contributor='Contributor Name' -F title='Example CURL' \
+ -F 'seriesTitle="seriesTitle"' -F contributor='Contributor Name' -F title='Example CURL' \
 -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' \
 -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'
 ```
