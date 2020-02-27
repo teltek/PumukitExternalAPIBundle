@@ -48,7 +48,9 @@ class APIService
 
     private $importMappingDataService;
 
-    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, ImportMappingDataService $importMappingDataService)
+    private $pumukitLocales;
+
+    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, ImportMappingDataService $importMappingDataService, array $pumukitLocales)
     {
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
@@ -56,6 +58,7 @@ class APIService
         $this->jobService = $jobService;
         $this->personService = $personService;
         $this->importMappingDataService = $importMappingDataService;
+        $this->pumukitLocales = $pumukitLocales;
     }
 
     /**
@@ -69,7 +72,7 @@ class APIService
                 throw new \Exception('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
         } else {
-            $series = $this->factoryService->createSeries($user);
+            $series = $this->createSeriesForMediaPackage($user, $requestParameters);
         }
 
         $multimediaObject = $this->factoryService->createMultimediaObject($series, true, $user);
@@ -168,7 +171,7 @@ class APIService
         if (0 === strpos($flavor, 'dublincore/series')) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => (string) $bodyDcterms->identifier]);
             if (!$series) {
-                $series = $this->factoryService->createSeries($user);
+                $series = $this->createSeriesForMediaPackage($user, $requestParameters);
             }
             $multimediaObject->setSeries($series);
             $this->documentManager->persist($multimediaObject);
@@ -228,7 +231,7 @@ class APIService
                 throw new \Exception('The series with "id" "'.$seriesId.'" cannot be found on the database', Response::HTTP_NOT_FOUND);
             }
         } else {
-            $series = $this->factoryService->createSeries($user);
+            $series = $this->createSeriesForMediaPackage($user, $requestParameters);
         }
 
         $multimediaObject = $this->factoryService->createMultimediaObject($series, true, $user);
@@ -330,5 +333,26 @@ class APIService
         }
 
         return $multimediaObject;
+    }
+
+    private function createSeriesForMediaPackage(User $user, array $requestParameters): Series
+    {
+        if (!$requestParameters['seriesTitle']) {
+            return $this->factoryService->createSeries($user);
+        }
+
+        $seriesTitle = $this->processSeriesTitle($requestParameters['seriesTitle']);
+
+        return $this->factoryService->createSeries($user, $seriesTitle);
+    }
+
+    private function processSeriesTitle(string $requestTitle): array
+    {
+        $seriesTitle = [];
+        foreach ($this->pumukitLocales as $locale) {
+            $seriesTitle[$locale] = $requestTitle;
+        }
+
+        return $seriesTitle;
     }
 }
