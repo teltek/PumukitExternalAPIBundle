@@ -20,6 +20,9 @@ Creates an empty multimedia object and returns a mediaPackage formatted XML.
 **Optional (query) parameters:**  
 *series:* Series id for the multimedia object. If not set a new series will be created.
 
+**Optional (form) parameters:**  
+*seriesTitle:* Set series title  when created in all languages of the platform.  
+
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
@@ -78,6 +81,9 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 *dublincore:* DublinCore catalog as XML.  
 *flavor:* DublinCore Flavor (Only dublincore/episode and dublincore/series are supported at the moment).
 
+**Optional (form) parameters:**  
+*seriesTitle:* Set series title  when created in all languages of the platform.  
+
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
@@ -121,7 +127,9 @@ The track file or files (this can be an array of tracks, each requiring one flav
 *license:* License field on the multimedia object.  
 *publisher:* Person name. Added with publisher role as a new person or an existing one if it already exists. Can be an array of names.  
 *title:* Title field on the multimedia object.  
-*series:* Series id for the multimedia object.
+*series:* Series id for the multimedia object.  
+*seriesTitle:* Set series title when created in all languages of the platform.  
+
 
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
