@@ -5,7 +5,6 @@ namespace Pumukit\ExternalAPIBundle\Services;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\CoreBundle\Services\ImportMappingDataService;
 use Pumukit\EncoderBundle\Services\JobService;
-use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
@@ -15,55 +14,36 @@ use Pumukit\SchemaBundle\Services\MaterialService;
 use Pumukit\SchemaBundle\Services\PersonService;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Class APIService.
- */
-class APIService
+class APIService extends APICommonService
 {
     public const PUMUKIT_EPISODE = 'pumukit/episode';
-    /**
-     * @var DocumentManager
-     */
-    private $documentManager;
 
-    /**
-     * @var FactoryService
-     */
-    private $factoryService;
-
-    /**
-     * @var MaterialService
-     */
+    /** @var MaterialService */
     private $materialService;
-
-    /**
-     * @var JobService
-     */
+    /** @var JobService */
     private $jobService;
-
-    /**
-     * @var PersonService
-     */
+    /** @var PersonService */
     private $personService;
-
     private $importMappingDataService;
 
-    private $pumukitLocales;
-
-    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, MaterialService $materialService, JobService $jobService, PersonService $personService, ImportMappingDataService $importMappingDataService, array $pumukitLocales)
-    {
+    public function __construct(
+        DocumentManager $documentManager,
+        FactoryService $factoryService,
+        MaterialService $materialService,
+        JobService $jobService,
+        PersonService $personService,
+        ImportMappingDataService $importMappingDataService,
+        array $pumukitLocales
+    ) {
+        parent::__construct($documentManager, $factoryService, $pumukitLocales);
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
         $this->materialService = $materialService;
         $this->jobService = $jobService;
         $this->personService = $personService;
         $this->importMappingDataService = $importMappingDataService;
-        $this->pumukitLocales = $pumukitLocales;
     }
 
-    /**
-     * @throws \Exception
-     */
     public function createMediaPackage(array $requestParameters, User $user = null)
     {
         if ($seriesId = $requestParameters['series']) {
@@ -82,9 +62,6 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function addAttachment(array $requestParameters)
     {
         [$mediaPackage, $flavor, $body, $language] = array_values($requestParameters);
@@ -103,9 +80,6 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function addTrack(array $requestParameters)
     {
         [$mediaPackage, $flavor, $body, $profile, $priority, $language, $description] = array_values($requestParameters);
@@ -120,9 +94,6 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function addCatalog(array $requestParameters)
     {
         [$mediaPackage, $flavor, $body] = array_values($requestParameters);
@@ -151,9 +122,6 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function addDCCatalog(array $requestParameters, User $user = null)
     {
         [$mediaPackage, $flavor, $body] = array_values($requestParameters);
@@ -220,9 +188,6 @@ class APIService
         return $mediaPackage->asXML();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function addMediaPackage(array $requestParameters, User $user = null)
     {
         [$flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
@@ -289,72 +254,5 @@ class APIService
         $mediaPackage = $this->generateXML($multimediaObject);
 
         return $mediaPackage->asXML();
-    }
-
-    private function generateXML(MultimediaObject $multimediaObject): \SimpleXMLElement
-    {
-        $xml = new \SimpleXMLElement('<mediapackage><media/><metadata/><attachments/><publications/></mediapackage>');
-        $xml->addAttribute('id', $multimediaObject->getId());
-        $publicDate = $multimediaObject->getPublicDate();
-        $xml->addAttribute('start', $publicDate->setTimezone(new \DateTimeZone('Z'))->format('Y-m-d\TH:i:s\Z'));
-
-        foreach ($multimediaObject->getMaterials() as $material) {
-            $attachment = $xml->attachments->addChild('attachment');
-            $attachment->addAttribute('id', $material->getId());
-            $attachment->addChild('mimetype', $material->getMimeType());
-            $tags = $attachment->addChild('tags');
-            foreach ($material->getTags() as $tag) {
-                $tags->addChild('tag', $tag);
-            }
-            $attachment->addChild('url', '');
-            $attachment->addChild('size', '');
-        }
-
-        return $xml;
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function getMultimediaObjectFromMediaPackageXML(string $mediaPackage): MultimediaObject
-    {
-        try {
-            $mediaPackage = simplexml_load_string($mediaPackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-
-        $multimediaObject = $this->documentManager->getRepository(MultimediaObject::class)->findOneBy([
-            '_id' => (string) $mediaPackage['id'],
-        ]);
-
-        if (!$multimediaObject) {
-            $msg = sprintf('The multimedia object with "id" "%s" cannot be found on the database', (string) $mediaPackage['id']);
-
-            throw new \Exception($msg, Response::HTTP_NOT_FOUND);
-        }
-
-        return $multimediaObject;
-    }
-
-    private function createSeriesForMediaPackage(User $user, array $requestParameters): Series
-    {
-        if (!$requestParameters['seriesTitle']) {
-            return $this->factoryService->createSeries($user);
-        }
-
-        $seriesTitle = $this->processSeriesTitle($requestParameters['seriesTitle']);
-
-        return $this->factoryService->createSeries($user, $seriesTitle);
-    }
-
-    private function processSeriesTitle(string $requestTitle): array
-    {
-        $seriesTitle = [];
-        foreach ($this->pumukitLocales as $locale) {
-            $seriesTitle[$locale] = $requestTitle;
-        }
-
-        return $seriesTitle;
     }
 }
