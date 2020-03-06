@@ -3,6 +3,7 @@
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Pumukit\EncoderBundle\Document\Job;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
@@ -19,9 +20,8 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  */
 class IngestControllerTest extends WebTestCase
 {
-    /**
-     * @var DocumentManager
-     */
+    public  const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
+    /** @var DocumentManager */
     private $dm;
 
     private $jobService;
@@ -34,23 +34,13 @@ class IngestControllerTest extends WebTestCase
         $options = ['environment' => 'test'];
         static::bootKernel($options);
         $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
-        $this->dm = static::$kernel->getContainer()
-            ->get('doctrine_mongodb')->getManager();
-        $this->dm->getDocumentCollection(MultimediaObject::class)
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
-            ->remove([])
-        ;
+        $this->dm = static::$kernel->getContainer()->get('doctrine_mongodb')->getManager();
+
+        $this->dm->getDocumentCollection(MultimediaObject::class)->remove([]);
+        $this->dm->getDocumentCollection(Series::class)->remove([]);
+        $this->dm->getDocumentCollection(Person::class)->remove([]);
+        $this->dm->getDocumentCollection(Role::class)->remove([]);
+        $this->dm->getDocumentCollection(Job::class)->remove([]);
     }
 
     /**
@@ -58,21 +48,11 @@ class IngestControllerTest extends WebTestCase
      */
     public function tearDown()
     {
-        $this->dm->getDocumentCollection(MultimediaObject::class)
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Series')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Person')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitSchemaBundle:Role')
-            ->remove([])
-        ;
-        $this->dm->getDocumentCollection('PumukitEncoderBundle:Job')
-            ->remove([])
-        ;
+        $this->dm->getDocumentCollection(MultimediaObject::class)->remove([]);
+        $this->dm->getDocumentCollection(Series::class)->remove([]);
+        $this->dm->getDocumentCollection(Person::class)->remove([]);
+        $this->dm->getDocumentCollection(Role::class)->remove([]);
+        $this->dm->getDocumentCollection(Job::class)->remove([]);
         $this->dm->close();
         $this->jobService = null;
         gc_collect_cycles();
@@ -86,13 +66,14 @@ class IngestControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/api/ingest/createMediaPackage');
+        $client->request('GET', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
-        $client->request('POST', '/api/ingest/createMediaPackage');
+
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
 
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/ingest/createMediaPackage');
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $createdAt = new \DateTime();
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
@@ -112,14 +93,14 @@ class IngestControllerTest extends WebTestCase
         $this->assertEmpty((string) $mediaPackage->publications);
 
         $series = $multimediaObject->getSeries();
-        $client->request('POST', '/api/ingest/createMediaPackage', ['series' => $series->getId()]);
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE, ['series' => $series->getId()]);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($series->getId(), $multimediaObject->getSeries()->getId());
 
-        $client->request('POST', '/api/ingest/createMediaPackage', ['series' => 'fake id']);
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE, ['series' => 'fake id']);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
     }
 
@@ -127,7 +108,7 @@ class IngestControllerTest extends WebTestCase
     {
         // Get valid mediapackage
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/ingest/createMediaPackage');
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         // Fails if no post parameters
         $client->request('POST', '/api/ingest/addAttachment');
@@ -172,7 +153,7 @@ class IngestControllerTest extends WebTestCase
     {
         // Set up
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/ingest/createMediaPackage');
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
@@ -207,7 +188,7 @@ class IngestControllerTest extends WebTestCase
     {
         // Set up
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/ingest/createMediaPackage');
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         //$mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
@@ -222,7 +203,7 @@ class IngestControllerTest extends WebTestCase
     {
         // Set up
         $client = $this->createAuthorizedClient();
-        $client->request('POST', '/api/ingest/createMediaPackage');
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
@@ -250,7 +231,7 @@ class IngestControllerTest extends WebTestCase
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $originalSeries = $multimediaObject->getSeries();
         $seriesFile = $this->getUploadFile('series.xml');
-        $seriesCatalog = simplexml_load_file($seriesFile, 'SimpleXMLElement', LIBXML_NOCDATA);
+        $seriesCatalog = simplexml_load_string(file_get_contents($seriesFile), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         $namespacesMetadata = $seriesCatalog->getNamespaces(true);
         $seriesCatalogDcterms = $seriesCatalog->children($namespacesMetadata['dcterms']);

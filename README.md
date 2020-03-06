@@ -32,3 +32,9 @@ curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ing
 ```
 curl -X POST -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/addMediaPackage -F contributor='test CURL' -F title='Test CURL' -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'
 ```
+
+API DELETE Examples using curl
+##### removeTag: ( Remove the custom tag configured for external api )
+```
+curl -X DELETE -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/remove/tag -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" />'
+```

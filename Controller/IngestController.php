@@ -12,8 +12,6 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * @Route("/api/ingest", methods="POST")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
- *
- * Class IngestController
  */
 class IngestController extends Controller
 {
@@ -164,9 +162,6 @@ class IngestController extends Controller
         }
     }
 
-    /**
-     * @throws \Exception
-     */
     private function getBasicRequestParameters(Request $request): array
     {
         return $this->validatePostData($request->request->get('mediaPackage'), $request->request->get('flavor'), $request->files->get('BODY'));
@@ -198,13 +193,6 @@ class IngestController extends Controller
         return $requestParameters;
     }
 
-    /**
-     * @param mixed $mediaPackage
-     * @param mixed $flavor
-     * @param mixed $body
-     *
-     * @throws \Exception
-     */
     private function validatePostData($mediaPackage, $flavor, $body): array
     {
         if (!$mediaPackage) {
