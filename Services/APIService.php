@@ -5,6 +5,7 @@ namespace Pumukit\ExternalAPIBundle\Services;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\CoreBundle\Services\ImportMappingDataService;
 use Pumukit\EncoderBundle\Services\JobService;
+use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
@@ -65,6 +66,7 @@ class APIService extends APICommonService
     public function addAttachment(array $requestParameters)
     {
         [$mediaPackage, $flavor, $body, $language] = array_values($requestParameters);
+        $overriding = $requestParameters['overriding'] ?? null;
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
@@ -73,7 +75,7 @@ class APIService extends APICommonService
             'language' => $language,
         ];
 
-        $multimediaObject = $this->materialService->addMaterialFile($multimediaObject, $body, $materialMetadata);
+        $multimediaObject = $this->processMaterialFile($multimediaObject, $body, $materialMetadata, $overriding);
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
@@ -254,5 +256,19 @@ class APIService extends APICommonService
         $mediaPackage = $this->generateXML($multimediaObject);
 
         return $mediaPackage->asXML();
+    }
+
+    protected function processMaterialFile(MultimediaObject $multimediaObject, $body, $materialMetadata, string $overriding = null): MultimediaObject
+    {
+        if (!$overriding) {
+            return $this->materialService->addMaterialFile($multimediaObject, $body, $materialMetadata);
+        }
+
+        $material = $multimediaObject->getMaterialById($overriding);
+        if (!$material) {
+            throw new \Exception(sprintf('Material with id "%s" not found', $overriding), Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->materialService->updateMaterialFile($multimediaObject, $body, $material, $materialMetadata);
     }
 }

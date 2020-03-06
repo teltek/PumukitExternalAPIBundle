@@ -8,9 +8,14 @@ API Examples using curl:
 curl -X POST -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/createMediaPackage
 ```
 
-##### Add attachment
+##### Add attachment without override
 ```
 curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/addAttachment -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="srt"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/subtitle.srt
+```
+
+##### Add attachment overriding attachment
+```
+curl -X POST -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/addAttachment -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"><media/><metadata/><attachments/><publications/></mediapackage>"' -F 'flavor="srt"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/subtitle.srt -F 'override="5c982e5339d98b25008b456a"'
 ```
 
 ##### Add track
