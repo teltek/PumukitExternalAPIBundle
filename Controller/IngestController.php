@@ -52,6 +52,7 @@ class IngestController extends Controller
                 'language' => 'en',
             ];
             $requestParameters = $this->getCustomParameterFromRequest($request, $basicRequestParameters, $customParameters);
+            $requestParameters['overriding'] = $request->request->get('overriding');
 
             $response = $apiService->addAttachment($requestParameters);
 

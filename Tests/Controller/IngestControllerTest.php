@@ -20,7 +20,9 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  */
 class IngestControllerTest extends WebTestCase
 {
-    public  const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
+    public const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
+    public const ENDPOINT_ADD_ATTACHMENT = '/api/ingest/addAttachment';
+
     /** @var DocumentManager */
     private $dm;
 
@@ -111,21 +113,22 @@ class IngestControllerTest extends WebTestCase
         $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         // Fails if no post parameters
-        $client->request('POST', '/api/ingest/addAttachment');
+
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         $postParams = [
             'mediaPackage' => $mediaPackage->asXML(),
         ];
         // Still fails if no flavor set
-        $client->request('POST', '/api/ingest/addAttachment', $postParams);
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams);
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // We check success case and that attachment has been added
         // File generation
         $postParams['flavor'] = 'srt';
         $subtitleFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addAttachment', $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
@@ -145,8 +148,48 @@ class IngestControllerTest extends WebTestCase
             'flavor' => 'attachment/srt',
         ];
         $subtitleFile = $this->generateSubtitleFile();
-        $client->request('POST', '/api/ingest/addAttachment', $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_NOT_FOUND, $client->getResponse()->getStatusCode());
+    }
+
+    public function testoverrideAttachment()
+    {
+        // Get valid mediapackage
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        // Fails if no post parameters
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT);
+
+        $postParams = [
+            'mediaPackage' => $mediaPackage->asXML(),
+        ];
+        // Still fails if no flavor set
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams);
+
+        // We check success case and that attachment has been added
+        // File generation
+        $postParams['flavor'] = 'srt';
+        $subtitleFile = $this->generateSubtitleFile();
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams, ['BODY' => $subtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        $overridingSubtitleFile = $this->generateOverridingSubtitleFile();
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
+        $materials = $multimediaObject->getMaterials();
+
+        $postParams['overriding'] = $materials[0]->getId();
+        $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams, ['BODY' => $overridingSubtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        // NOTE: We need that because document manager have 2 instances: Test and API
+        $this->dm->clear();
+        $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
+
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+
+        $this->assertEquals($multimediaObject->getMaterials(){0}->getName(), 'subtitles2.srt');
+        $this->assertEquals(count($multimediaObject->getMaterials()), 1);
+        $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
+        $this->assertEquals((string) $mediaPackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
     }
 
     public function testAddTrack()
@@ -436,6 +479,17 @@ class IngestControllerTest extends WebTestCase
     protected function generateSubtitleFile()
     {
         $localFile = 'subtitles.srt';
+        $fp = fopen($localFile, 'wb');
+        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
+        $subtitleFile = new UploadedFile($localFile, $localFile);
+        fclose($fp);
+
+        return $subtitleFile;
+    }
+
+    protected function generateOverridingSubtitleFile(): UploadedFile
+    {
+        $localFile = 'subtitles2.srt';
         $fp = fopen($localFile, 'wb');
         fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
         $subtitleFile = new UploadedFile($localFile, $localFile);
