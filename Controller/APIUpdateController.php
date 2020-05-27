@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @Route("/api/delete/")
+ * @Route("/api/mmobjs")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
 class APIUpdateController extends Controller
@@ -19,58 +19,26 @@ class APIUpdateController extends Controller
     ];
 
     /**
-     * @Route("tag", methods="DELETE")
+     * @Route("/{id}/tags/{tagId}", methods="DELETE")
+     * @Route("/{id}/tags/cod/{tagCod}", methods="DELETE")
      */
-    public function removeDataAction(Request $request): ?Response
+    public function removeDataAction(Request $request, string $id, string $tagId = null, string $tagCod = null): ?Response
     {
+        $apiDeleteService = $this->get('pumukit_external_api.api_delete_service');
+
         try {
-            $allowedTagToRemove = $this->container->getParameter('pumukit_external_api.allowed_removed_tag');
-            $apiDeleteService = $this->get('pumukit_external_api.api_delete_service');
-
-            $basicRequestParameters = $this->getBasicRequestParameters($request);
-            $customParameters = [
-                'series' => false,
-            ];
-
-            $requestParameters = $this->getCustomParameterFromRequest($request, $basicRequestParameters, $customParameters);
-            $response = $apiDeleteService->removeTagFromMediaPackage($requestParameters, $this->getUser(), $allowedTagToRemove);
-
-            return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
+            $apiDeleteService->removeTagFromMultimediaObject($id, $tagId, $tagCod);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
-        }
-    }
+            $message = $exception->getMessage();
+            $code = $exception->getCode();
+            if ($exception->getCode() < 100) {
+                $code = 500;
+                $message = $exception->__toString();
+            }
 
-    /**
-     * NOTE: Order of parameters its very important on service to assign the correct variable using list.
-     */
-    private function getCustomParameterFromRequest(Request $request, array $requestParameters, array $customRequestParameters): array
-    {
-        foreach ($customRequestParameters as $key => $defaultValue) {
-            $requestParameters[$key] = $request->request->get($key, $defaultValue);
+            return new Response($message, $code, $this->predefinedHeaders);
         }
 
-        return $requestParameters;
-    }
-
-    private function generateResponse($response, $status, array $headers): Response
-    {
-        return new Response($response, $status, $headers);
-    }
-
-    private function getBasicRequestParameters(Request $request): array
-    {
-        return $this->validatePostData($request->request->get('mediaPackage'));
-    }
-
-    private function validatePostData($mediaPackage): array
-    {
-        if (!$mediaPackage) {
-            throw new \Exception("No 'mediaPackage' parameter", Response::HTTP_BAD_REQUEST);
-        }
-
-        return [
-            'mediaPackage' => $mediaPackage,
-        ];
+        return new Response('OK', Response::HTTP_OK);
     }
 }
