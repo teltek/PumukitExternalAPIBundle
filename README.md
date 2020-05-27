@@ -41,5 +41,5 @@ curl -X POST -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/
 API DELETE Examples using curl
 ##### removeTag: ( Remove the custom tag configured for external api )
 ```
-curl -X DELETE -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/remove/tag -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" />'
+curl -X DELETE -i --basic -u admin:admin https://localhost:8000/app_dev.php/api/mmobjs/5c982e5339d98b25008b456a/tags/cod/CUSTOM_TAG
 ```

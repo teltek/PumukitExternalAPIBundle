@@ -1,30 +1,31 @@
-PuMuKIT /api/remove Documentation
+PuMuKIT /api/mmobjs/{id} Documentation
 ========================================
 
 Table of Contents
 ---------------------
 
-* [DELETE /tag](#post-tag)
+* [DELETE /tag/cod/{cod}](#post-tag)
 
-# DELETE /tag
+# DELETE /tags/cod/{cod}
 **Description:**  
-Removes if exists custom TAG configured. This case is used when 3th party services have proprietary custom tags to process videos.
+Removes specified tag from multimedia object, if allowed.
 
-**Required (form) parameters:**    
-*mediaPackage:* The edited mediaPackage as XML.
+This is used when 3th party services have proprietary custom tags to tag videos to be processed.
 
 **Response formats:**  
 [text/xml](http://www.w3.org/XML/)
 
 **Status codes:**  
-*200:* OK, Returns media package format like Opencast.  
+*200:* OK.  
+*403:*
+ - {CUSTOM_TAG} not allowed to be removed
 *404:* 
- - MediaPackage not found on BBDD
+ - MultimediaObject not found on BBDD
+ - Tag not found on BBDD
  - {CUSTOM_TAG} not found on MultimediaObject
-
 *500:* Internal Server Error, *NONE*.
 
 **Example curl:**  
 ```
-curl -X DELETE -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/remove/tag -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" />'
+curl -X DELETE -i --basic -u admin:admin https://localhost:8000/app_dev.php/api/mmobjs/5c982e5339d98b25008b456a/tags/cod/CUSTOM_TAG
 ```
