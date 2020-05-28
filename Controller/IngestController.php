@@ -29,6 +29,7 @@ class IngestController extends Controller
             $requestParameters = [];
             $customParameters = [
                 'series' => false,
+                'seriesTitle' => null,
             ];
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
             $response = $apiService->createMediaPackage($requestParameters, $this->getUser());
@@ -111,6 +112,11 @@ class IngestController extends Controller
         try {
             $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getBasicRequestParameters($request);
+            $customParameters = [
+                'series' => false,
+                'seriesTitle' => null,
+            ];
+            $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
             $response = $apiService->addDCCatalog($requestParameters, $this->getUser());
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
