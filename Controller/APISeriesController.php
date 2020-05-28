@@ -16,6 +16,7 @@ class APISeriesController extends Controller
 {
     /**
      * @Route("", methods="POST")
+     * @Route("/", methods="POST")
      */
     public function createAction(Request $request): ?Response
     {
