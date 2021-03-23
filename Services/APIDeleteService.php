@@ -70,7 +70,8 @@ class APIDeleteService extends APICommonService
             throw new \Exception($msg, Response::HTTP_FORBIDDEN);
         }
 
-        $this->tagService->removeTagFromMultimediaObject($multimediaObject, $tag->getId(), true);
+        $this->tagService->removeTagFromMultimediaObject($multimediaObject, $tag->getId(), false);
+        $this->documentManager->flush();
     }
 
     private function canTagBeRemoved(Tag $tag)
