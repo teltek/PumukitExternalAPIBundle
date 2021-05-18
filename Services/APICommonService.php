@@ -6,6 +6,7 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Series;
 use Pumukit\SchemaBundle\Services\FactoryService;
+use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Symfony\Component\HttpFoundation\Response;
 
 class APICommonService
@@ -14,12 +15,18 @@ class APICommonService
     protected $documentManager;
     /** @var FactoryService */
     protected $factoryService;
+    private $multimediaObjectEventDispatcherService;
     protected $pumukitLocales;
 
-    public function __construct(DocumentManager $documentManager, FactoryService $factoryService, array $pumukitLocales)
-    {
+    public function __construct(
+        DocumentManager $documentManager,
+        FactoryService $factoryService,
+        MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService,
+        array $pumukitLocales
+    ) {
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
+        $this->multimediaObjectEventDispatcherService = $multimediaObjectEventDispatcherService;
         $this->pumukitLocales = $pumukitLocales;
     }
 
@@ -85,5 +92,10 @@ class APICommonService
         }
 
         return $seriesTitle;
+    }
+
+    protected function multimediaObjectDispatchUpdate(MultimediaObject $multimediaObject): void
+    {
+        $this->multimediaObjectEventDispatcherService->dispatchUpdate($multimediaObject);
     }
 }

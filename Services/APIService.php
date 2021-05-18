@@ -77,6 +77,8 @@ class APIService extends APICommonService
 
         $multimediaObject = $this->processMaterialFile($multimediaObject, $body, $materialMetadata, $overriding);
 
+        $this->multimediaObjectDispatchUpdate($multimediaObject);
+
         $mediaPackage = $this->generateXML($multimediaObject);
 
         return $mediaPackage->asXML();

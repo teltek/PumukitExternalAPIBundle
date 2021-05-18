@@ -7,6 +7,7 @@
         <service id="pumukit_external_api.api_common_service" class="Pumukit\ExternalAPIBundle\Services\APICommonService">
             <argument type="service" id="doctrine_mongodb.odm.document_manager"/>
             <argument type="service" id="pumukitschema.factory"/>
+            <argument type="service" id="pumukitschema.multimediaobject_dispatcher"/>
             <argument>%pumukit.locales%</argument>
         </service>
 
