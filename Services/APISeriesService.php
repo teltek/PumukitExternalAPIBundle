@@ -5,6 +5,7 @@ namespace Pumukit\ExternalAPIBundle\Services;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\SchemaBundle\Document\Series;
 use Pumukit\SchemaBundle\Services\FactoryService;
+use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Pumukit\SchemaBundle\Services\TagService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -17,9 +18,10 @@ class APISeriesService extends APICommonService
         DocumentManager $documentManager,
         FactoryService $factoryService,
         array $pumukitLocales,
-        TagService $tagService
+        TagService $tagService,
+        MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService
     ) {
-        parent::__construct($documentManager, $factoryService, $pumukitLocales);
+        parent::__construct($documentManager, $factoryService, $multimediaObjectEventDispatcherService, $pumukitLocales);
         $this->documentManager = $documentManager;
         $this->tagService = $tagService;
     }

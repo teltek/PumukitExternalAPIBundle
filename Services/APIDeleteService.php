@@ -6,6 +6,7 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Tag;
 use Pumukit\SchemaBundle\Services\FactoryService;
+use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Pumukit\SchemaBundle\Services\TagService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,9 +21,10 @@ class APIDeleteService extends APICommonService
         FactoryService $factoryService,
         array $pumukitLocales,
         TagService $tagService,
+        MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService,
         string $allowedTagToDelete
     ) {
-        parent::__construct($documentManager, $factoryService, $pumukitLocales);
+        parent::__construct($documentManager, $factoryService, $multimediaObjectEventDispatcherService, $pumukitLocales);
         $this->documentManager = $documentManager;
         $this->tagService = $tagService;
         $this->allowedTagToDelete = $allowedTagToDelete;

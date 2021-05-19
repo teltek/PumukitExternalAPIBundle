@@ -12,6 +12,7 @@ use Pumukit\SchemaBundle\Document\Series;
 use Pumukit\SchemaBundle\Document\User;
 use Pumukit\SchemaBundle\Services\FactoryService;
 use Pumukit\SchemaBundle\Services\MaterialService;
+use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Pumukit\SchemaBundle\Services\PersonService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,9 +35,10 @@ class APIService extends APICommonService
         JobService $jobService,
         PersonService $personService,
         ImportMappingDataService $importMappingDataService,
+        MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService,
         array $pumukitLocales
     ) {
-        parent::__construct($documentManager, $factoryService, $pumukitLocales);
+        parent::__construct($documentManager, $factoryService, $multimediaObjectEventDispatcherService, $pumukitLocales);
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
         $this->materialService = $materialService;

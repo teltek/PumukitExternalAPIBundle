@@ -18,6 +18,7 @@
             <argument type="service" id="pumukitencoder.job"/>
             <argument type="service" id="pumukitschema.person"/>
             <argument type="service" id="pumukitcore.import_mapping_data"/>
+            <argument type="service" id="pumukitschema.multimediaobject_dispatcher"/>
             <argument>%pumukit.locales%</argument>
         </service>
 
@@ -26,6 +27,7 @@
             <argument type="service" id="pumukitschema.factory"/>
             <argument>%pumukit.locales%</argument>
             <argument type="service" id="pumukitschema.tag" />
+            <argument type="service" id="pumukitschema.multimediaobject_dispatcher"/>
             <argument>%pumukit_external_api.allowed_removed_tag%</argument>
         </service>
 
@@ -34,6 +36,7 @@
             <argument type="service" id="pumukitschema.factory"/>
             <argument>%pumukit.locales%</argument>
             <argument type="service" id="pumukitschema.tag" />
+            <argument type="service" id="pumukitschema.multimediaobject_dispatcher"/>
         </service>
     </services>
 </container>

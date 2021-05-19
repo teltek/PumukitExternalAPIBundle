@@ -15,8 +15,8 @@ class APICommonService
     protected $documentManager;
     /** @var FactoryService */
     protected $factoryService;
-    private $multimediaObjectEventDispatcherService;
     protected $pumukitLocales;
+    private $multimediaObjectEventDispatcherService;
 
     public function __construct(
         DocumentManager $documentManager,
