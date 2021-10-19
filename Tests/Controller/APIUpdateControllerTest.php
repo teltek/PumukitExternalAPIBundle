@@ -3,10 +3,10 @@
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Tag;
 use Pumukit\SchemaBundle\Services\TagService;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -15,7 +15,7 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  * @internal
  * @coversNothing
  */
-class APIUpdateControllerTest extends WebTestCase
+class APIUpdateControllerTest extends PumukitTestCase
 {
     private const ENDPOINT_REMOVE_TAG = '/api/delete/tag';
     private const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';

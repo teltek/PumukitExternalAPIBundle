@@ -3,12 +3,12 @@
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\EncoderBundle\Document\Job;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +18,7 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  * @internal
  * @coversNothing
  */
-class IngestControllerTest extends WebTestCase
+class IngestControllerTest extends PumukitTestCase
 {
     public const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
     public const ENDPOINT_ADD_ATTACHMENT = '/api/ingest/addAttachment';
@@ -31,7 +31,7 @@ class IngestControllerTest extends WebTestCase
     /**
      * @throws \Doctrine\ODM\MongoDB\MongoDBException
      */
-    public function setUp()
+    public function setUp(): void
     {
         $options = ['environment' => 'test'];
         static::bootKernel($options);
@@ -48,7 +48,7 @@ class IngestControllerTest extends WebTestCase
     /**
      * @throws \Doctrine\ODM\MongoDB\MongoDBException
      */
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->dm->getDocumentCollection(MultimediaObject::class)->remove([]);
         $this->dm->getDocumentCollection(Series::class)->remove([]);
