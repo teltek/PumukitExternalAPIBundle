@@ -1,0 +1,26 @@
+services:
+  _defaults:
+    autowire:      true
+    autoconfigure: true
+    public:        true
+    bind:
+      $pumukitLocales: '%pumukit.locales%'
+
+  Pumukit\ExternalAPIBundle\Controller\:
+    resource: '../../Controller'
+    tags: ['controller.service_arguments']
+
+  Pumukit\ExternalAPIBundle\Services\APICommonService:
+    class: Pumukit\ExternalAPIBundle\Services\APICommonService
+
+  Pumukit\ExternalAPIBundle\Services\APIService:
+    class: Pumukit\ExternalAPIBundle\Services\APIService
+
+  Pumukit\ExternalAPIBundle\Services\APIDeleteService:
+    class: Pumukit\ExternalAPIBundle\Services\APIDeleteService
+    arguments:
+      $allowedTagToDelete: '%pumukit_external_api.allowed_removed_tag%'
+
+  Pumukit\ExternalAPIBundle\Services\APISeriesService:
+    class: Pumukit\ExternalAPIBundle\Services\APISeriesService
+

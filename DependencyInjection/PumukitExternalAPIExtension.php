@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\DependencyInjection;
 
 use Symfony\Component\Config\FileLocator;
@@ -16,8 +18,8 @@ class PumukitExternalAPIExtension extends Extension
 
         $container->setParameter('pumukit_external_api.allowed_removed_tag', $config['allowed_removed_tag']);
 
-        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
-        $loader->load('services.xml');
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader->load('pumukit_external_api.yaml');
 
         $permissions = [['role' => 'ROLE_ACCESS_INGEST_API', 'description' => 'Access the Ingest API']];
         $newPermissions = array_merge($container->getParameter('pumukitschema.external_permissions'), $permissions);

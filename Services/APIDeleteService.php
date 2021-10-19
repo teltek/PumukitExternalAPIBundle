@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -12,7 +14,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class APIDeleteService extends APICommonService
 {
-    /** @var TagService */
     private $tagService;
     private $allowedTagToDelete;
 
