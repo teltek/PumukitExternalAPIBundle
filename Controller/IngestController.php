@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pumukit\ExternalAPIBundle\Controller;
 
+use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\EncoderBundle\Services\ProfileService;
 use Pumukit\ExternalAPIBundle\Services\APIService;
 use Pumukit\SchemaBundle\Document\Role;
