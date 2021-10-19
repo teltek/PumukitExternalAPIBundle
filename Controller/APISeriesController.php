@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Controller;
 
+use Pumukit\ExternalAPIBundle\Services\APISeriesService;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -12,17 +15,23 @@ use Symfony\Component\HttpFoundation\Response;
  * @Route("/api/series")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
-class APISeriesController extends Controller
+class APISeriesController extends AbstractController
 {
+    private $APISeriesService;
+
+    public function __construct(APISeriesService $APISeriesService)
+    {
+        $this->APISeriesService = $APISeriesService;
+    }
+
     /**
      * @Route("", methods="POST")
      * @Route("/", methods="POST")
      */
     public function createAction(Request $request): ?Response
     {
-        $apiSeriesService = $this->get('pumukit_external_api.api_series_service');
         $title = $request->request->get('title');
-        $series = $apiSeriesService->create($this->getUser(), $title);
+        $series = $this->APISeriesService->create($this->getUser(), $title);
 
         return new Response($series->getId());
     }

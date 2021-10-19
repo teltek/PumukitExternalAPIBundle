@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Controller;
 
+use Pumukit\EncoderBundle\Services\ProfileService;
+use Pumukit\ExternalAPIBundle\Services\APIService;
 use Pumukit\SchemaBundle\Document\Role;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,11 +17,24 @@ use Symfony\Component\HttpFoundation\Response;
  * @Route("/api/ingest", methods="POST")
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
-class IngestController extends Controller
+class IngestController extends AbstractController
 {
+    private $documentManager;
+    private $APIService;
+    private $profileService;
     private $predefinedHeaders = [
         'Content-Type' => 'text/xml',
     ];
+
+    public function __construct(
+        DocumentManager $documentManager,
+        APIService $APIService,
+        ProfileService $profileService
+    ) {
+        $this->documentManager = $documentManager;
+        $this->APIService = $APIService;
+        $this->profileService = $profileService;
+    }
 
     /**
      * @Route("/createMediaPackage")
@@ -25,14 +42,13 @@ class IngestController extends Controller
     public function createMediaPackageAction(Request $request): ?Response
     {
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = [];
             $customParameters = [
                 'series' => false,
                 'seriesTitle' => null,
             ];
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
-            $response = $apiService->createMediaPackage($requestParameters, $this->getUser());
+            $response = $this->APIService->createMediaPackage($requestParameters, $this->getUser());
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -46,8 +62,6 @@ class IngestController extends Controller
     public function addAttachmentAction(Request $request): ?Response
     {
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
-
             $basicRequestParameters = $this->getBasicRequestParameters($request);
             $customParameters = [
                 'language' => 'en',
@@ -55,7 +69,7 @@ class IngestController extends Controller
             $requestParameters = $this->getCustomParameterFromRequest($request, $basicRequestParameters, $customParameters);
             $requestParameters['overriding'] = $request->request->get('overriding');
 
-            $response = $apiService->addAttachment($requestParameters);
+            $response = $this->APIService->addAttachment($requestParameters);
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -69,18 +83,16 @@ class IngestController extends Controller
     public function addTrackAction(Request $request): ?Response
     {
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getBasicRequestParameters($request);
 
-            $profileService = $this->get('pumukitencoder.profile');
             $customParameters = [
-                'profile' => $profileService->getDefaultMasterProfile(),
+                'profile' => $this->profileService->getDefaultMasterProfile(),
                 'priority' => 2,
                 'language' => 'en',
                 'description' => '',
             ];
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
-            $response = $apiService->addTrack($requestParameters);
+            $response = $this->APIService->addTrack($requestParameters);
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -94,9 +106,8 @@ class IngestController extends Controller
     public function addCatalogAction(Request $request): ?Response
     {
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getBasicRequestParameters($request);
-            $response = $apiService->addCatalog($requestParameters);
+            $response = $this->APIService->addCatalog($requestParameters);
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -110,14 +121,13 @@ class IngestController extends Controller
     public function addDCCatalogAction(Request $request): ?Response
     {
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getBasicRequestParameters($request);
             $customParameters = [
                 'series' => false,
                 'seriesTitle' => null,
             ];
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
-            $response = $apiService->addDCCatalog($requestParameters, $this->getUser());
+            $response = $this->APIService->addDCCatalog($requestParameters, $this->getUser());
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -144,24 +154,22 @@ class IngestController extends Controller
             'body' => $request->files->get('BODY'),
         ];
 
-        $profileService = $this->get('pumukitencoder.profile');
         $customParameters = [
             'series' => false,
             'accessRights' => false,
             'title' => '',
             'description' => '',
-            'profile' => $profileService->getDefaultMasterProfile(),
+            'profile' => $this->profileService->getDefaultMasterProfile(),
             'priority' => 2,
             'language' => 'en',
         ];
 
         try {
-            $apiService = $this->get('pumukit_external_api.api_service');
             $requestParameters = $this->getCustomParameterFromRequest($request, $requestParameters, $customParameters);
 
             $requestParameters = $this->getPeopleFromRoles($request, $requestParameters);
 
-            $response = $apiService->addMediaPackage($requestParameters, $this->getUser());
+            $response = $this->APIService->addMediaPackage($requestParameters, $this->getUser());
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
@@ -188,9 +196,8 @@ class IngestController extends Controller
 
     private function getPeopleFromRoles(Request $request, array $requestParameters): array
     {
-        $documentManager = $this->get('doctrine_mongodb.odm.document_manager');
         $roles = [];
-        foreach ($documentManager->getRepository(Role::class)->findAll() as $role) {
+        foreach ($this->documentManager->getRepository(Role::class)->findAll() as $role) {
             $roleCode = $role->getCod();
             $roles[$roleCode] = $request->request->get($roleCode);
         }

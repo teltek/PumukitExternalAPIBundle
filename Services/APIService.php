@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -20,11 +22,8 @@ class APIService extends APICommonService
 {
     public const PUMUKIT_EPISODE = 'pumukit/episode';
 
-    /** @var MaterialService */
     private $materialService;
-    /** @var JobService */
     private $jobService;
-    /** @var PersonService */
     private $personService;
     private $importMappingDataService;
 

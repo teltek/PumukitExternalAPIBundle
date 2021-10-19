@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -11,9 +13,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class APISeriesService extends APICommonService
 {
-    /** @var TagService */
-    private $tagService;
-
     public function __construct(
         DocumentManager $documentManager,
         FactoryService $factoryService,
@@ -23,7 +22,6 @@ class APISeriesService extends APICommonService
     ) {
         parent::__construct($documentManager, $factoryService, $multimediaObjectEventDispatcherService, $pumukitLocales);
         $this->documentManager = $documentManager;
-        $this->tagService = $tagService;
     }
 
     public function create($user = null, $title = null): Series

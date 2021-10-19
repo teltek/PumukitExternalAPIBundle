@@ -13,12 +13,12 @@
     "authors": [
         {
             "name": "Teltek Team",
-            "homepage": "http://teltek.es"
+            "homepage": "https://teltek.es"
         }
     ],
     "require": {
         "php": ">=7.2",
-        "pumukit/pumukit": "^3.2",
+        "pumukit/pumukit": "^4.0",
         "ext-simplexml": "*",
         "ext-json": "*",
         "ext-libxml": "*"

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -11,9 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class APICommonService
 {
-    /** @var DocumentManager */
     protected $documentManager;
-    /** @var FactoryService */
     protected $factoryService;
     protected $pumukitLocales;
     private $multimediaObjectEventDispatcherService;
