@@ -41,7 +41,7 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 ##### Sample episode request
 
 ```
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
 -F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml
 ```
@@ -65,7 +65,7 @@ curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/ap
 ##### Sample series request
 
 ```
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
 -F 'flavor="dublincore/series"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/series.xml 
 ```
@@ -100,7 +100,7 @@ Creates mediapackage from given media tracks and dublincore metadata.
 ##### Sample request
 
 ```
-curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addMediaPackage \
+curl -X POST -f -i --basic -u api-user:api-password http://localhost/api/ingest/addMediaPackage \
 -F contributor='Contributor Name' -F title='Example CURL' \
 -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' \
 -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'

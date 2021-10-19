@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
+use MongoDB\BSON\ObjectId;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Tag;
@@ -17,7 +20,7 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
  */
 class APIUpdateControllerTest extends PumukitTestCase
 {
-    private const ENDPOINT_REMOVE_TAG = '/api/delete/tag';
+    private const ENDPOINT_REMOVE_TAG = '/api/mmobjs/RANDOMID/tags/cod/CUSTOM_TAG';
     private const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
     private const DEFAULT_ALLOWED_REMOVED_TAG = 'CUSTOM_TAG';
 
@@ -31,18 +34,17 @@ class APIUpdateControllerTest extends PumukitTestCase
     {
         $options = ['environment' => 'test'];
         static::bootKernel($options);
+        parent::setUp();
         $this->documentManager = static::$kernel->getContainer()->get('doctrine_mongodb.odm.document_manager');
         $this->tagService = static::$kernel->getContainer()->get('pumukitschema.tag');
         $this->allowedRemovedTag = static::$kernel->getContainer()->getParameter('pumukit_external_api.allowed_removed_tag');
-
-        $this->documentManager->getDocumentCollection(MultimediaObject::class)->remove([]);
     }
 
     public function tearDown(): void
     {
+        parent::tearDown();
         $this->documentManager = null;
         gc_collect_cycles();
-        parent::tearDown();
     }
 
     public function testIsDefaultTagConfigured(): void
@@ -52,25 +54,31 @@ class APIUpdateControllerTest extends PumukitTestCase
 
     public function testShouldBlockGETRequest(): void
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $client->request('GET', self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $client->request('GET', $route);
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
     }
 
     public function testShouldBlockPOSTRequest(): void
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $client->request('POST', self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $client->request('POST', $route);
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
     }
 
     public function testShouldBlockUnauthorizedDELETERequest(): void
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $client->request('DELETE', self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $client->request('DELETE', $route);
         $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
     }
 
@@ -88,7 +96,9 @@ class APIUpdateControllerTest extends PumukitTestCase
         ];
 
         $client = $this->createAuthorizedClient();
-        $client->request('DELETE', self::ENDPOINT_REMOVE_TAG, $postParams);
+
+        $route = str_replace('RANDOMID', $multimediaObject->getId(), self::ENDPOINT_REMOVE_TAG);
+        $client->request('DELETE', $route, $postParams);
 
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
 
@@ -101,6 +111,7 @@ class APIUpdateControllerTest extends PumukitTestCase
 
     protected function createAuthorizedClient()
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
         $container = static::$kernel->getContainer();
 

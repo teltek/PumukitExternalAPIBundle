@@ -2,9 +2,7 @@
 
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
-use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
-use Pumukit\EncoderBundle\Document\Job;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
@@ -23,49 +21,29 @@ class IngestControllerTest extends PumukitTestCase
     public const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
     public const ENDPOINT_ADD_ATTACHMENT = '/api/ingest/addAttachment';
 
-    /** @var DocumentManager */
-    private $dm;
-
+    protected $dm;
     private $jobService;
 
-    /**
-     * @throws \Doctrine\ODM\MongoDB\MongoDBException
-     */
     public function setUp(): void
     {
         $options = ['environment' => 'test'];
         static::bootKernel($options);
+        parent::setUp();
         $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
         $this->dm = static::$kernel->getContainer()->get('doctrine_mongodb')->getManager();
-
-        $this->dm->getDocumentCollection(MultimediaObject::class)->remove([]);
-        $this->dm->getDocumentCollection(Series::class)->remove([]);
-        $this->dm->getDocumentCollection(Person::class)->remove([]);
-        $this->dm->getDocumentCollection(Role::class)->remove([]);
-        $this->dm->getDocumentCollection(Job::class)->remove([]);
     }
 
-    /**
-     * @throws \Doctrine\ODM\MongoDB\MongoDBException
-     */
     public function tearDown(): void
     {
-        $this->dm->getDocumentCollection(MultimediaObject::class)->remove([]);
-        $this->dm->getDocumentCollection(Series::class)->remove([]);
-        $this->dm->getDocumentCollection(Person::class)->remove([]);
-        $this->dm->getDocumentCollection(Role::class)->remove([]);
-        $this->dm->getDocumentCollection(Job::class)->remove([]);
+        parent::tearDown();
         $this->dm->close();
         $this->jobService = null;
         gc_collect_cycles();
-        parent::tearDown();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function testCreateMediaPackage()
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
 
         $client->request('GET', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
@@ -179,14 +157,13 @@ class IngestControllerTest extends PumukitTestCase
 
         $postParams['overriding'] = $materials[0]->getId();
         $client->request('POST', self::ENDPOINT_ADD_ATTACHMENT, $postParams, ['BODY' => $overridingSubtitleFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // NOTE: We need that because document manager have 2 instances: Test and API
         $this->dm->clear();
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
 
-        $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
-
-        $this->assertEquals($multimediaObject->getMaterials(){0}->getName(), 'subtitles2.srt');
+        $this->assertEquals($multimediaObject->getMaterials()[0]->getName(), 'subtitles2');
         $this->assertEquals(count($multimediaObject->getMaterials()), 1);
         $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
         $this->assertEquals((string) $mediaPackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
@@ -224,7 +201,11 @@ class IngestControllerTest extends PumukitTestCase
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
-        $this->assertEquals(1, count($jobs));
+        $count = 0;
+        foreach ($jobs as $job) {
+            ++$count;
+        }
+        $this->assertEquals(1, $count);
     }
 
     public function testAddCatalog()
@@ -274,12 +255,13 @@ class IngestControllerTest extends PumukitTestCase
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $originalSeries = $multimediaObject->getSeries();
         $seriesFile = $this->getUploadFile('series.xml');
-        $seriesCatalog = simplexml_load_string(file_get_contents($seriesFile), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $seriesCatalog = simplexml_load_string(file_get_contents($seriesFile->getPathName()), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         $namespacesMetadata = $seriesCatalog->getNamespaces(true);
         $seriesCatalogDcterms = $seriesCatalog->children($namespacesMetadata['dcterms']);
 
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $seriesFile], ['CONTENT_TYPE' => 'multipart/form-data']);
+
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
@@ -430,7 +412,11 @@ class IngestControllerTest extends PumukitTestCase
         $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Doe, John']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$creatorRole]));
-        $this->assertEquals(3, count($multimediaObject->getPeople()));
+        $i = 0;
+        foreach ($multimediaObject->getPeople() as $personCount) {
+            ++$i;
+        }
+        $this->assertEquals(4, $i);
         $this->assertEquals(0, count($multimediaObject->getPeopleByRole($notUsedRole)));
 
         foreach ($multimediaObject->getI18nDescription() as $language => $description) {
@@ -442,7 +428,11 @@ class IngestControllerTest extends PumukitTestCase
 
         //I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
-        $this->assertEquals(1, count($jobs));
+        $i = 0;
+        foreach ($jobs as $job) {
+            ++$i;
+        }
+        $this->assertEquals(1, $i);
 
         $trackFiles = [
             $this->generateTrackFile(),
@@ -455,11 +445,9 @@ class IngestControllerTest extends PumukitTestCase
         $this->dm->refresh($multimediaObject);
     }
 
-    /**
-     * @return \Symfony\Bundle\FrameworkBundle\Client
-     */
     protected function createAuthorizedClient()
     {
+        self::ensureKernelShutdown();
         $client = static::createClient();
         $container = static::$kernel->getContainer();
 
@@ -473,10 +461,7 @@ class IngestControllerTest extends PumukitTestCase
         return $client;
     }
 
-    /**
-     * @return UploadedFile
-     */
-    protected function generateSubtitleFile()
+    protected function generateSubtitleFile(): UploadedFile
     {
         $localFile = 'subtitles.srt';
         $fp = fopen($localFile, 'wb');
@@ -491,17 +476,14 @@ class IngestControllerTest extends PumukitTestCase
     {
         $localFile = 'subtitles2.srt';
         $fp = fopen($localFile, 'wb');
-        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
+        fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\n our final approach into Coruscant.");
         $subtitleFile = new UploadedFile($localFile, $localFile);
         fclose($fp);
 
         return $subtitleFile;
     }
 
-    /**
-     * @return UploadedFile
-     */
-    protected function generateTrackFile()
+    protected function generateTrackFile(): UploadedFile
     {
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
         $localFile = 'presenter.mp4';
@@ -511,12 +493,7 @@ class IngestControllerTest extends PumukitTestCase
         return new UploadedFile($uploadFile, $localFile);
     }
 
-    /**
-     * @param string $localFile
-     *
-     * @return UploadedFile
-     */
-    protected function getUploadFile($localFile)
+    protected function getUploadFile(string $localFile): UploadedFile
     {
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
         $uploadFile = 'upload.xml';

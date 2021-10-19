@@ -64,7 +64,7 @@ The attachment file.
 
 **Example curl:**  
 ```
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addAttachment \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addAttachment \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
 -F 'flavor="srt"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/subtitle.srt
 ```
@@ -96,12 +96,12 @@ Adds a dublincore catalog to a given multimedia object. The dublincore/episode v
 **Example curl:**  
 ```
 # Episode
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
  -F 'seriesTitle="seriesTitle"' -F 'flavor="dublincore/episode"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/episode.xml 
 
 # Series
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addDCCatalog \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addDCCatalog \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
  -F 'seriesTitle="seriesTitle"' -F 'flavor="dublincore/series"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/series.xml 
 ```
@@ -143,7 +143,7 @@ The track file or files (this can be an array of tracks, each requiring one flav
 **Example curl:**  
 ```
 # Multiple tracks
-curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addMediaPackage \
+curl -X POST -f -i --basic -u api-user:api-password http://localhost/api/ingest/addMediaPackage \
  -F 'seriesTitle="seriesTitle"' -F contributor='Contributor Name' -F title='Example CURL' \
 -F 'flavor[]=presentation/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presentation.mp4' \
 -F 'flavor[]=presenter/source' -F 'BODY[]=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4'
@@ -174,7 +174,7 @@ The track file.
 
 **Example curl:**  
 ```
-curl -X POST -i --basic -u api-user:api-password https://gcms-local.teltek.es/app_dev.php/api/ingest/addTrack \
+curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addTrack \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
 -F 'flavor="presenter/source"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4
 ```

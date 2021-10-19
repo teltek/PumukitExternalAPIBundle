@@ -16,6 +16,7 @@ use Pumukit\SchemaBundle\Services\FactoryService;
 use Pumukit\SchemaBundle\Services\MaterialService;
 use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Pumukit\SchemaBundle\Services\PersonService;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 class APIService extends APICommonService
@@ -137,7 +138,11 @@ class APIService extends APICommonService
             throw new \Exception("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
-        $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
+        if ($body instanceof UploadedFile) {
+            $body = simplexml_load_string(file_get_contents($body->getPathname()), 'SimpleXMLElement', LIBXML_NOCDATA);
+        } else {
+            $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
+        }
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);
