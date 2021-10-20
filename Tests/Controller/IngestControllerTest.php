@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
@@ -267,7 +269,7 @@ class IngestControllerTest extends PumukitTestCase
         $newSeries = $multimediaObject->getSeries();
         $this->assertInstanceOf(Series::class, $newSeries);
         $this->assertNotEquals($originalSeries->getId(), $newSeries->getId());
-        $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
+        $this->assertEquals(2, $this->dm->getRepository(Series::class)->count());
 
         // Test reassigning to an existing series
         $seriesCatalogDcterms->identifier = $originalSeries->getId();
@@ -277,7 +279,7 @@ class IngestControllerTest extends PumukitTestCase
         $this->dm->refresh($multimediaObject);
         $newSeries = $multimediaObject->getSeries();
         $this->assertEquals($originalSeries->getId(), $newSeries->getId());
-        $this->assertEquals(2, $this->dm->getRepository('PumukitSchemaBundle:Series')->count());
+        $this->assertEquals(2, $this->dm->getRepository(Series::class)->count());
 
         // Test assign episode.xml to change title
         $postParams = [
@@ -285,7 +287,7 @@ class IngestControllerTest extends PumukitTestCase
             'flavor' => 'dublincore/episode',
         ];
         $episodeFile = $this->getUploadFile('episode.xml');
-        $newPerson = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
+        $newPerson = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'John doe']);
         $this->assertFalse($newPerson instanceof Person);
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
@@ -301,7 +303,7 @@ class IngestControllerTest extends PumukitTestCase
         $this->assertEquals('All rights reserved', $multimediaObject->getLicense());
         $this->assertEquals(new \DateTime('2018-10-17T14:00:44Z'), $multimediaObject->getRecordDate());
         //There are no people because there are no roles to add them as.
-        $this->assertEquals(0, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
+        $this->assertEquals(0, $this->dm->getRepository(Person::class)->createQueryBuilder()->count()->getQuery()->execute());
         $publisherRole = new Role();
         $publisherRole->setCod('publisher');
         $contributorRole = new Role();
@@ -312,23 +314,23 @@ class IngestControllerTest extends PumukitTestCase
 
         // Test that now all people were added correctly
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
-        $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
+        $this->assertEquals(3, $this->dm->getRepository(Person::class)->createQueryBuilder()->count()->getQuery()->execute());
         $this->dm->refresh($multimediaObject);
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'John doe']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'John doe']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole]));
 
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery johnson']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'Avery johnson']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole, $publisherRole]));
 
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery son']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'Avery son']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$publisherRole]));
 
         //Sanity check to make sure we're not duplicating people.
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
-        $this->assertEquals(3, $this->dm->getRepository('PumukitSchemaBundle:Person')->createQueryBuilder()->count()->getQuery()->execute());
+        $this->assertEquals(3, $this->dm->getRepository(Person::class)->createQueryBuilder()->count()->getQuery()->execute());
     }
 
     public function testAddMediaPackage()
@@ -403,13 +405,13 @@ class IngestControllerTest extends PumukitTestCase
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
         $this->assertEquals($postParams['accessRights'], $multimediaObject->getCopyright());
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the third']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'Avery the third']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$contributorRole, $publisherRole]));
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Avery the fourth']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'Avery the fourth']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$publisherRole]));
-        $person = $this->dm->getRepository('PumukitSchemaBundle:Person')->findOneBy(['name' => 'Doe, John']);
+        $person = $this->dm->getRepository(Person::class)->findOneBy(['name' => 'Doe, John']);
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$creatorRole]));
         $i = 0;
