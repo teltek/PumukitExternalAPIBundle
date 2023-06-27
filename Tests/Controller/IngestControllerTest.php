@@ -16,6 +16,7 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 /**
  * @internal
+ *
  * @coversNothing
  */
 class IngestControllerTest extends PumukitTestCase
@@ -215,7 +216,7 @@ class IngestControllerTest extends PumukitTestCase
         // Set up
         $client = $this->createAuthorizedClient();
         $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
-        //$mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
+        // $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
 
         // Test without params
         $client->request('POST', '/api/ingest/addCatalog');
@@ -302,7 +303,7 @@ class IngestControllerTest extends PumukitTestCase
         $this->assertEquals('@1999-2019', $multimediaObject->getCopyright());
         $this->assertEquals('All rights reserved', $multimediaObject->getLicense());
         $this->assertEquals(new \DateTime('2018-10-17T14:00:44Z'), $multimediaObject->getRecordDate());
-        //There are no people because there are no roles to add them as.
+        // There are no people because there are no roles to add them as.
         $this->assertEquals(0, $this->dm->getRepository(Person::class)->createQueryBuilder()->count()->getQuery()->execute());
         $publisherRole = new Role();
         $publisherRole->setCod('publisher');
@@ -328,7 +329,7 @@ class IngestControllerTest extends PumukitTestCase
         $this->assertInstanceOf(Person::class, $person);
         $this->assertTrue($multimediaObject->containsPersonWithAllRoles($person, [$publisherRole]));
 
-        //Sanity check to make sure we're not duplicating people.
+        // Sanity check to make sure we're not duplicating people.
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $episodeFile], ['CONTENT_TYPE' => 'multipart/form-data']);
         $this->assertEquals(3, $this->dm->getRepository(Person::class)->createQueryBuilder()->count()->getQuery()->execute());
     }
@@ -361,22 +362,22 @@ class IngestControllerTest extends PumukitTestCase
             'flavor' => 'presenter/source',
             // 'flavor' => 'presentation/source', // How to add TWO files simultaneously?
             // Optional:
-            //'abstract' => 'Episode metadata value',
+            // 'abstract' => 'Episode metadata value',
             'accessRights' => '@1999-2019',
-            //'available' => 'Episode metadata value',
+            // 'available' => 'Episode metadata value',
             'contributor' => 'Avery the third',
-            //'coverage' => 'Episode metadata value',
-            //'created' => 'Episode metadata value',
+            // 'coverage' => 'Episode metadata value',
+            // 'created' => 'Episode metadata value',
             'creator' => 'Doe, John',
-            //'date' => 'Episode metadata value',
+            // 'date' => 'Episode metadata value',
             'description' => 'Description test',
-            //'extent' => 'Episode metadata value',
-            //'format' => 'Episode metadata value',
-            //'identifier' => 'Episode metadata value',
-            //'isPartOf' => 'Episode metadata value',
-            //'isReferencedBy' => 'Episode metadata value',
-            //'isReplacedBy' => 'Episode metadata value',
-            //'language' => 'Episode metadata value',
+            // 'extent' => 'Episode metadata value',
+            // 'format' => 'Episode metadata value',
+            // 'identifier' => 'Episode metadata value',
+            // 'isPartOf' => 'Episode metadata value',
+            // 'isReferencedBy' => 'Episode metadata value',
+            // 'isReplacedBy' => 'Episode metadata value',
+            // 'language' => 'Episode metadata value',
             'license' => 'All rights reserved',
             'publisher' => ['Avery the third', 'Avery the fourth'],
             // 'relation' => 'Episode metadata value',
@@ -394,7 +395,7 @@ class IngestControllerTest extends PumukitTestCase
             // 'seriesDCCatalogUri' => 'URL of series DublinCore Catalog',
             // 'seriesDCCatalog' => 'Series DublinCore Catalog',
             // 'mediaUri' => 'URL of a media track file ',
-            //Extra:
+            // Extra:
             'series' => $series->getId(),
         ];
         $trackFile = $this->generateTrackFile();
@@ -428,7 +429,7 @@ class IngestControllerTest extends PumukitTestCase
             $this->assertEquals($postParams['title'], $title);
         }
 
-        //I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
+        // I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
         $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $i = 0;
         foreach ($jobs as $job) {
