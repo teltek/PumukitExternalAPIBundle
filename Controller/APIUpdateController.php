@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * @Route("/api/mmobjs")
+ *
  * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
 class APIUpdateController extends AbstractController

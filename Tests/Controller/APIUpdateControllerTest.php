@@ -16,6 +16,7 @@ use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 /**
  * @internal
+ *
  * @coversNothing
  */
 class APIUpdateControllerTest extends PumukitTestCase
@@ -26,6 +27,7 @@ class APIUpdateControllerTest extends PumukitTestCase
 
     /** @var DocumentManager */
     private $documentManager;
+
     /** @var TagService */
     private $tagService;
     private $allowedRemovedTag;
