@@ -56,7 +56,7 @@ class APIDeleteService extends APICommonService
         $tag = $this->documentManager->getRepository(Tag::class)->findOneBy($criteria);
 
         if (!$tag || !$tag instanceof Tag) {
-            $msg = sprintf('The tag with criteria %s cannot be found on the database', json_encode($criteria));
+            $msg = sprintf('The tag with criteria %s cannot be found on the database', json_encode($criteria, JSON_THROW_ON_ERROR));
 
             throw new \Exception($msg, Response::HTTP_NOT_FOUND);
         }

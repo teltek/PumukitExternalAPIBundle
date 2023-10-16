@@ -114,7 +114,7 @@ class IngestControllerTest extends PumukitTestCase
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
-        $this->assertEquals(count($multimediaObject->getMaterials()), 1);
+        $this->assertEquals(is_countable($multimediaObject->getMaterials()) ? count($multimediaObject->getMaterials()) : 0, 1);
         $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
         $this->assertEquals((string) $mediaPackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
         $this->assertNotEmpty($mediaPackage->media);
@@ -167,7 +167,7 @@ class IngestControllerTest extends PumukitTestCase
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
 
         $this->assertEquals($multimediaObject->getMaterials()[0]->getName(), 'subtitles2');
-        $this->assertEquals(count($multimediaObject->getMaterials()), 1);
+        $this->assertEquals(is_countable($multimediaObject->getMaterials()) ? count($multimediaObject->getMaterials()) : 0, 1);
         $this->assertEquals($multimediaObject->getMaterials()[0]->getMimeType(), $postParams['flavor']);
         $this->assertEquals((string) $mediaPackage->attachments[0]->attachment->mimetype, $postParams['flavor']);
     }
