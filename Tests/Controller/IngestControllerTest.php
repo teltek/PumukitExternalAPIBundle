@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
+use Doctrine\ODM\MongoDB\MongoDBException;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
@@ -224,7 +225,7 @@ class IngestControllerTest extends PumukitTestCase
     }
 
     /**
-     * @throws \Doctrine\ODM\MongoDB\MongoDBException
+     * @throws MongoDBException
      */
     public function testAddDCCatalog()
     {
