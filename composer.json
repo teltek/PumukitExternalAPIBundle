@@ -8,12 +8,12 @@
         "bundle",
         "pumukit"
     ],
-    "homepage": "https://gitlab.teltek.es/pumukit/PumukitExternalAPIBundle.git",
+    "homepage": "https://github.com/teltek/PumukitExternalAPIBundle.git",
     "license": "proprietary",
     "authors": [
         {
             "name": "Teltek Team",
-            "homepage": "http://teltek.es"
+            "homepage": "https://teltek.es"
         }
     ],
     "require": {

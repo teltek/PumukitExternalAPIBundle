@@ -1,9 +1,13 @@
 ExternalAPIBundle
 =================
 
+WARNING: We cannot guarantee that this module is compatible with new versions of PuMuKIT.
+
+This package allow to interact with PuMuKIT through an external API. It is a RESTful API that allows to create and update Multimedia Objects.
+
 API Examples using curl:
 
-##### New mediapackage
+##### New media package
 ```
 curl -X POST -f -i --basic -u admin:admin http://localhost:8000/app_dev.php/api/ingest/createMediaPackage
 ```
