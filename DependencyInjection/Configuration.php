@@ -18,7 +18,7 @@ class Configuration implements ConfigurationInterface
             ->children()
             ->scalarNode('allowed_removed_tag')
             ->defaultValue('CUSTOM_TAG')
-            ->isRequired()
+            // ->isRequired()
             ->info('Define which tag will be used to mark objects which can be subjected to tag removal')
             ->end()
         ;

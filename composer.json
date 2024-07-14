@@ -1,5 +1,5 @@
 {
-    "name": "teltek/pumukit-external-api-bundle",
+    "name": "unimoodle/pumukitexternalapibundle",
     "type": "symfony-bundle",
     "description": "PuMuKIT external ingest API",
     "keywords": [
@@ -8,8 +8,8 @@
         "bundle",
         "pumukit"
     ],
-    "homepage": "https://github.com/teltek/PumukitExternalAPIBundle.git",
-    "license": "proprietary",
+    "homepage": "https://git.isyc.com/unimoodle/pumukitexternalapibundle.git",
+    "license": "MIT",
     "authors": [
         {
             "name": "Teltek Team",
