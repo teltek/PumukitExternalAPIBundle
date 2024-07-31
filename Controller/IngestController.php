@@ -103,6 +103,48 @@ class IngestController extends AbstractController
     }
 
     /**
+     * @Route("/deleteTrack")
+     */
+    public function deleteTrackAction(Request $request): ?Response
+    {
+        try {
+            $this->APIService->deleteTrack($request->request->get('mediaPackage'));
+
+            return $this->generateResponse('true', Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+        }
+    }
+
+    /**
+     * @Route("/getLinkTrack")
+     */
+    public function getLinkTrackAction(Request $request): ?Response
+    {
+        try {
+            $link = $this->APIService->getLinkTrack($request);
+
+            return $this->generateResponse($link, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+        }
+    }
+
+    /**
+     * @Route("/getDownloadTrack")
+     */
+    public function getDownloadTrackAction(Request $request): ?Response
+    {
+        try {
+            $link = $this->APIService->getDownloadTrack($request, $request->request->get('mediaPackage'));
+
+            return $this->generateResponse($link, Response::HTTP_OK, $this->predefinedHeaders);
+        } catch (\Exception $exception) {
+            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+        }
+    }
+
+    /**
      * @Route("/addCatalog")
      */
     public function addCatalogAction(Request $request): ?Response
@@ -158,12 +200,14 @@ class IngestController extends AbstractController
 
         $customParameters = [
             'series' => false,
+            'seriesTitle' => '',
             'accessRights' => false,
             'title' => '',
             'description' => '',
             'profile' => $this->profileService->getDefaultMasterProfile(),
             'priority' => 2,
             'language' => 'en',
+            'roles' => []
         ];
 
         try {
