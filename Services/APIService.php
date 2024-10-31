@@ -6,7 +6,8 @@ namespace Pumukit\ExternalAPIBundle\Services;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\CoreBundle\Services\ImportMappingDataService;
-use Pumukit\EncoderBundle\Services\JobService;
+use Pumukit\EncoderBundle\Services\DTO\JobOptions;
+use Pumukit\EncoderBundle\Services\JobCreator;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
@@ -24,7 +25,7 @@ class APIService extends APICommonService
     public const PUMUKIT_EPISODE = 'pumukit/episode';
 
     private $materialService;
-    private $jobService;
+    private $jobCreator;
     private $personService;
     private $importMappingDataService;
 
@@ -32,7 +33,7 @@ class APIService extends APICommonService
         DocumentManager $documentManager,
         FactoryService $factoryService,
         MaterialService $materialService,
-        JobService $jobService,
+        JobCreator $jobCreator,
         PersonService $personService,
         ImportMappingDataService $importMappingDataService,
         MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService,
@@ -42,7 +43,7 @@ class APIService extends APICommonService
         $this->documentManager = $documentManager;
         $this->factoryService = $factoryService;
         $this->materialService = $materialService;
-        $this->jobService = $jobService;
+        $this->jobCreator = $jobCreator;
         $this->personService = $personService;
         $this->importMappingDataService = $importMappingDataService;
     }
@@ -92,8 +93,8 @@ class APIService extends APICommonService
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
-        // Use master_copy by default, maybe later add an optional parameter to endpoint to add tracks
-        $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $body, $profile, $priority, $language, $description);
+        $jobOptions = new JobOptions($profile, $priority, $language, $description);
+        $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $body, $jobOptions);
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
@@ -146,7 +147,7 @@ class APIService extends APICommonService
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);
-        if (0 === strpos($flavor, 'dublincore/series')) {
+        if (str_starts_with($flavor, 'dublincore/series')) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => (string) $bodyDcterms->identifier]);
             if (!$series) {
                 $series = $this->createSeriesForMediaPackage($user, $requestParameters);
@@ -154,7 +155,7 @@ class APIService extends APICommonService
             $multimediaObject->setSeries($series);
             $this->documentManager->persist($multimediaObject);
             $this->documentManager->flush();
-        } elseif (0 === strpos($flavor, 'dublincore/episode')) {
+        } elseif (str_starts_with($flavor, 'dublincore/episode')) {
             if ($newTitle = (string) $bodyDcterms->title) {
                 foreach ($multimediaObject->getI18nTitle() as $language => $title) {
                     $multimediaObject->setTitle($newTitle, $language);
@@ -254,7 +255,8 @@ class APIService extends APICommonService
                 $body = [$body];
             }
             foreach ($body as $track) {
-                $multimediaObject = $this->jobService->createTrackFromLocalHardDrive($multimediaObject, $track, $profile, $priority, $language, $description);
+                $jobOptions = new JobOptions($profile, $priority, $language, $description);
+                $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $track, $jobOptions);
             }
         }
 

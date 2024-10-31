@@ -31,7 +31,7 @@ class APIDeleteService extends APICommonService
         $this->allowedTagToDelete = $allowedTagToDelete;
     }
 
-    public function removeTagFromMultimediaObject(string $id, string $tagId = null, string $tagCod = null)
+    public function removeTagFromMultimediaObject(string $id, string $tagId = null, string $tagCod = null): void
     {
         $multimediaObject = $this->documentManager->getRepository(MultimediaObject::class)->findOneBy([
             '_id' => $id,
@@ -55,7 +55,7 @@ class APIDeleteService extends APICommonService
 
         $tag = $this->documentManager->getRepository(Tag::class)->findOneBy($criteria);
 
-        if (!$tag || !$tag instanceof Tag) {
+        if (!$tag instanceof Tag) {
             $msg = sprintf('The tag with criteria %s cannot be found on the database', json_encode($criteria, JSON_THROW_ON_ERROR));
 
             throw new \Exception($msg, Response::HTTP_NOT_FOUND);
@@ -77,7 +77,7 @@ class APIDeleteService extends APICommonService
         $this->documentManager->flush();
     }
 
-    private function canTagBeRemoved(Tag $tag)
+    private function canTagBeRemoved(Tag $tag): bool
     {
         $tags = $this->getTagsAllowedToDelete();
 
