@@ -6,6 +6,7 @@ namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
+use Pumukit\EncoderBundle\Services\Repository\JobRepository;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
@@ -26,14 +27,14 @@ class IngestControllerTest extends PumukitTestCase
     public const ENDPOINT_ADD_ATTACHMENT = '/api/ingest/addAttachment';
 
     protected $dm;
-    private $jobService;
+    private $jobRepository;
 
     public function setUp(): void
     {
         $options = ['environment' => 'test'];
         static::bootKernel($options);
         parent::setUp();
-        $this->jobService = static::$kernel->getContainer()->get('pumukitencoder.job');
+        $this->jobRepository = static::$kernel->getContainer()->get(JobRepository::class);
         $this->dm = static::$kernel->getContainer()->get('doctrine_mongodb')->getManager();
     }
 
@@ -41,7 +42,7 @@ class IngestControllerTest extends PumukitTestCase
     {
         parent::tearDown();
         $this->dm->close();
-        $this->jobService = null;
+        $this->jobRepository = null;
         gc_collect_cycles();
     }
 
@@ -204,7 +205,7 @@ class IngestControllerTest extends PumukitTestCase
         $mediaPackage = simplexml_load_string($client->getResponse()->getContent(), 'SimpleXMLElement', LIBXML_NOCDATA);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
         $this->assertInstanceOf(MultimediaObject::class, $multimediaObject);
-        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
+        $jobs = $this->jobRepository->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $count = 0;
         foreach ($jobs as $job) {
             ++$count;
@@ -431,7 +432,7 @@ class IngestControllerTest extends PumukitTestCase
         }
 
         // I can't check for tracks because the jobs haven't finished yet: $this->assertEquals(1, count($multimediaObject->getTracks()));
-        $jobs = $this->jobService->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
+        $jobs = $this->jobRepository->getNotFinishedJobsByMultimediaObjectId($multimediaObject->getId());
         $i = 0;
         foreach ($jobs as $job) {
             ++$i;
