@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pumukit\ExternalAPIBundle\Tests\Controller;
 
+use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\EncoderBundle\Services\Repository\JobRepository;
@@ -26,7 +27,7 @@ class IngestControllerTest extends PumukitTestCase
     public const ENDPOINT_CREATE_MEDIA_PACKAGE = '/api/ingest/createMediaPackage';
     public const ENDPOINT_ADD_ATTACHMENT = '/api/ingest/addAttachment';
 
-    protected $dm;
+    protected DocumentManager $dm;
     private $jobRepository;
 
     public function setUp(): void
