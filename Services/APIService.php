@@ -19,6 +19,7 @@ use Pumukit\SchemaBundle\Services\MultimediaObjectEventDispatcherService;
 use Pumukit\SchemaBundle\Services\PersonService;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
+use Pumukit\BasePlayerBundle\Services\TrackUrlService;
 
 class APIService extends APICommonService
 {
@@ -28,6 +29,7 @@ class APIService extends APICommonService
     private $jobCreator;
     private $personService;
     private $importMappingDataService;
+    private $trackUrlService;
 
     public function __construct(
         DocumentManager $documentManager,
@@ -37,6 +39,7 @@ class APIService extends APICommonService
         PersonService $personService,
         ImportMappingDataService $importMappingDataService,
         MultimediaObjectEventDispatcherService $multimediaObjectEventDispatcherService,
+        TrackUrlService $trackUrlService,
         array $pumukitLocales
     ) {
         parent::__construct($documentManager, $factoryService, $multimediaObjectEventDispatcherService, $pumukitLocales);
@@ -46,6 +49,7 @@ class APIService extends APICommonService
         $this->jobCreator = $jobCreator;
         $this->personService = $personService;
         $this->importMappingDataService = $importMappingDataService;
+        $this->trackUrlService = $trackUrlService;
     }
 
     public function createMediaPackage(array $requestParameters, User $user = null)
@@ -99,6 +103,33 @@ class APIService extends APICommonService
         $mediaPackage = $this->generateXML($multimediaObject);
 
         return $mediaPackage->asXML();
+    }
+
+    public function deleteTrack($mediaPackage)
+    {
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
+
+        $this->factoryService->deleteMultimediaObject($multimediaObject);
+        
+        return true;
+    }
+
+    public function getLinkTrack($request)
+    {
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($request->request->get('mediaPackage'));
+        return $request->getUriForPath('/video/magic/'.$multimediaObject->getSecret());
+    }
+
+    public function getDownloadTrack($request)
+    {
+        $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($request->request->get('mediaPackage'));
+        $track = null;
+        foreach ($multimediaObject->getTracks() as $link) {
+            $track = $link;
+        }
+        $url = $this->trackUrlService->generateDirectTrackFileUrl($track, $request);
+
+        return $request->getUriForPath($url);
     }
 
     public function addCatalog(array $requestParameters)
@@ -201,7 +232,7 @@ class APIService extends APICommonService
 
     public function addMediaPackage(array $requestParameters, User $user = null)
     {
-        [$flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
+        [$flavor, $body, $seriesId, $seriesTitle, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
 
         if ($seriesId) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
@@ -213,6 +244,11 @@ class APIService extends APICommonService
         }
 
         $multimediaObject = $this->factoryService->createMultimediaObject($series, true, $user);
+
+        // Change status to HIDDEN and tag PUCHWEBTV
+        $multimediaObject->setStatus(MultimediaObject::STATUS_HIDDEN);
+        $tag = $this->factoryService->getTagsByCod('PUCHWEBTV', false);
+        $multimediaObject->addTag($tag);
 
         if ($accessRights) {
             $multimediaObject->setCopyright($accessRights);
