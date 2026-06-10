@@ -9,6 +9,7 @@ Table of Contents
 * [POST /addDCCatalog](#post-adddccatalog)
 * [POST /addMediaPackage](#post-addmediapackage)
 * [POST /addTrack](#post-addtrack)
+* [GET /getDownloadTrack/{trackId}](#get-getdownloadtracktrackid)
 
 # POST /createMediaPackage
 **Description:**  
@@ -177,4 +178,28 @@ The track file.
 curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/addTrack \
 -F 'mediaPackage="<mediapackage id=\"5c982e5339d98b25008b456a\" start=\"2019-03-25T01:26:43Z\"></mediapackage>"' \
 -F 'flavor="presenter/source"' -F BODY=@Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4
+```
+
+# GET /getDownloadTrack/{trackId}
+**Description:**  
+Downloads the media file of a single track, identified directly by its track id. When the track is stored on an external system it answers with a `302` redirect to the real (time-limited) file URL; otherwise the file is streamed back. Access is granted by the Ingest API credentials only, bypassing the `play` permission, so videos can be downloaded regardless of their publication status.
+
+This replaces the old `/trackfile/{trackId}.mp4` link, which stopped working when video download security was hardened in PuMuKIT 5.1 (it now requires a player token and the `play` permission). The caller already knows the track id (it is taken from the `mmobj.json` listing, e.g. the first track tagged `etiqmedia`), so no track is selected here.
+
+**Path parameters:**  
+*trackId:* The id of the track to download (24 hex chars).
+
+**Response formats:**  
+The media file (binary) or a `302` redirect to it.
+
+**Status codes:**  
+*200:* OK, the media file is returned.  
+*302:* Found, redirect to the external file URL.  
+*404:* Not Found, the track does not exist or the file is missing on disk.
+
+**Example curl:**  
+```
+# Replaces:  curl -L https://domain.es/trackfile/5dca96b2f9556400433440a2.mp4 --output video.mp4
+curl -L --basic -u api-user:api-password \
+https://domain.es/api/ingest/getDownloadTrack/5dca96b2f9556400433440a2 --output video.mp4
 ```
