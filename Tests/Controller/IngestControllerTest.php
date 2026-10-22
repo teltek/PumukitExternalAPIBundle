@@ -12,10 +12,10 @@ use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Pumukit\SchemaBundle\Document\Person;
 use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Series;
-use Symfony\Component\BrowserKit\Cookie;
+use Pumukit\SchemaBundle\Document\User;
+use Pumukit\SchemaBundle\Services\PersonService;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 /**
  * @internal
@@ -455,14 +455,26 @@ class IngestControllerTest extends PumukitTestCase
     {
         self::ensureKernelShutdown();
         $client = static::createClient();
-        $container = static::$kernel->getContainer();
+        $dm = static::getContainer()->get('doctrine_mongodb')->getManager();
 
-        $token = new UsernamePasswordToken('tester', null, 'api', ['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API', 'ROLE_USER']);
-        $session = $container->get('session');
-        $session->set('_security_pumukit', serialize($token));
-        $session->save();
+        $personalScopeRoleCode = static::getContainer()->get(PersonService::class)->getPersonalScopeRoleCode();
+        if (!$dm->getRepository(Role::class)->findOneBy(['cod' => $personalScopeRoleCode])) {
+            $role = new Role();
+            $role->setCod($personalScopeRoleCode);
+            $dm->persist($role);
+        }
 
-        $client->getCookieJar()->set(new Cookie($session->getName(), $session->getId()));
+        $user = $dm->getRepository(User::class)->findOneBy(['username' => 'tester']);
+        if (!$user) {
+            $user = new User();
+            $user->setUsername('tester');
+            $user->setEmail('tester@pumukit.test');
+            $user->setRoles(['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API']);
+            $dm->persist($user);
+        }
+        $dm->flush();
+
+        $client->loginUser($user, 'pumukit');
 
         return $client;
     }

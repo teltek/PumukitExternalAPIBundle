@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace Pumukit\ExternalAPIBundle\Controller;
 
 use Pumukit\ExternalAPIBundle\Services\APIDeleteService;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * @Route("/api/mmobjs")
- *
- * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
- */
+#[Route('/api/mmobjs')]
+#[IsGranted('ROLE_ACCESS_INGEST_API')]
 class APIUpdateController extends AbstractController
 {
     private $APIDeleteService;
@@ -29,11 +26,9 @@ class APIUpdateController extends AbstractController
         $this->APIDeleteService = $APIDeleteService;
     }
 
-    /**
-     * @Route("/{id}/tags/{tagId}", methods="DELETE")
-     * @Route("/{id}/tags/cod/{tagCod}", methods="DELETE")
-     */
-    public function removeDataAction(Request $request, string $id, string $tagId = null, string $tagCod = null): ?Response
+    #[Route('/{id}/tags/{tagId}', methods: ['DELETE'])]
+    #[Route('/{id}/tags/cod/{tagCod}', methods: ['DELETE'])]
+    public function removeDataAction(Request $request, string $id, ?string $tagId = null, ?string $tagCod = null): ?Response
     {
         try {
             $this->APIDeleteService->removeTagFromMultimediaObject($id, $tagId, $tagCod);

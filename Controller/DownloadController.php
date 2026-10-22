@@ -9,13 +9,13 @@ use MongoDB\BSON\ObjectId;
 use Psr\Log\LoggerInterface;
 use Pumukit\SchemaBundle\Document\MediaType\Track;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Direct media download by track id, used by the external transcription system.
@@ -26,9 +26,8 @@ use Symfony\Component\Routing\Annotation\Route;
  * any track can be downloaded regardless of the publication status of its
  * multimedia object. The caller already knows the track id (it picks it from
  * the mmobj listing), so no track selection is done here.
- *
- * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
  */
+#[IsGranted('ROLE_ACCESS_INGEST_API')]
 class DownloadController extends AbstractController
 {
     private $documentManager;
@@ -40,9 +39,7 @@ class DownloadController extends AbstractController
         $this->logger = $logger;
     }
 
-    /**
-     * @Route("/api/ingest/getDownloadTrack/{trackId}", name="pumukit_external_api_download_track", methods="GET", requirements={"trackId"="[0-9a-fA-F]{24}"})
-     */
+    #[Route('/api/ingest/getDownloadTrack/{trackId}', name: 'pumukit_external_api_download_track', methods: ['GET'], requirements: ['trackId' => '[0-9a-fA-F]{24}'])]
     public function downloadAction(string $trackId): Response
     {
         $found = $this->findTrackById($trackId);

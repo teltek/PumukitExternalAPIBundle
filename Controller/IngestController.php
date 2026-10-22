@@ -8,17 +8,14 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\EncoderBundle\Services\ProfileService;
 use Pumukit\ExternalAPIBundle\Services\APIService;
 use Pumukit\SchemaBundle\Document\Role;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * @Route("/api/ingest", methods="POST")
- *
- * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
- */
+#[Route('/api/ingest', methods: ['POST'])]
+#[IsGranted('ROLE_ACCESS_INGEST_API')]
 class IngestController extends AbstractController
 {
     private $documentManager;
@@ -38,9 +35,7 @@ class IngestController extends AbstractController
         $this->profileService = $profileService;
     }
 
-    /**
-     * @Route("/createMediaPackage")
-     */
+    #[Route('/createMediaPackage')]
     public function createMediaPackageAction(Request $request): ?Response
     {
         try {
@@ -58,9 +53,7 @@ class IngestController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/addAttachment")
-     */
+    #[Route('/addAttachment')]
     public function addAttachmentAction(Request $request): Response
     {
         try {
@@ -79,9 +72,7 @@ class IngestController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/addTrack")
-     */
+    #[Route('/addTrack')]
     public function addTrackAction(Request $request): ?Response
     {
         try {
@@ -102,9 +93,7 @@ class IngestController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/addCatalog")
-     */
+    #[Route('/addCatalog')]
     public function addCatalogAction(Request $request): ?Response
     {
         try {
@@ -117,9 +106,7 @@ class IngestController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/addDCCatalog")
-     */
+    #[Route('/addDCCatalog')]
     public function addDCCatalogAction(Request $request): ?Response
     {
         try {
@@ -137,9 +124,7 @@ class IngestController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/addMediaPackage")
-     */
+    #[Route('/addMediaPackage')]
     public function addMediaPackageAction(Request $request): ?Response
     {
         $flavor = $request->request->get('flavor');

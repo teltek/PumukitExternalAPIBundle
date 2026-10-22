@@ -5,17 +5,14 @@ declare(strict_types=1);
 namespace Pumukit\ExternalAPIBundle\Controller;
 
 use Pumukit\ExternalAPIBundle\Services\APISeriesService;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-/**
- * @Route("/api/series")
- *
- * @Security("is_granted('ROLE_ACCESS_INGEST_API')")
- */
+#[Route('/api/series')]
+#[IsGranted('ROLE_ACCESS_INGEST_API')]
 class APISeriesController extends AbstractController
 {
     private $APISeriesService;
@@ -25,10 +22,8 @@ class APISeriesController extends AbstractController
         $this->APISeriesService = $APISeriesService;
     }
 
-    /**
-     * @Route("", methods="POST")
-     * @Route("/", methods="POST")
-     */
+    #[Route('', methods: ['POST'])]
+    #[Route('/', methods: ['POST'])]
     public function createAction(Request $request): ?Response
     {
         $title = $request->request->get('title');

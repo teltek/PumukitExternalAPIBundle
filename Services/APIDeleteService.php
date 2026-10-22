@@ -31,7 +31,7 @@ class APIDeleteService extends APICommonService
         $this->allowedTagToDelete = $allowedTagToDelete;
     }
 
-    public function removeTagFromMultimediaObject(string $id, string $tagId = null, string $tagCod = null): void
+    public function removeTagFromMultimediaObject(string $id, ?string $tagId = null, ?string $tagCod = null): void
     {
         $multimediaObject = $this->documentManager->getRepository(MultimediaObject::class)->findOneBy([
             '_id' => $id,

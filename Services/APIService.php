@@ -48,7 +48,7 @@ class APIService extends APICommonService
         $this->importMappingDataService = $importMappingDataService;
     }
 
-    public function createMediaPackage(array $requestParameters, User $user = null)
+    public function createMediaPackage(array $requestParameters, ?User $user = null)
     {
         if ($seriesId = $requestParameters['series']) {
             $series = $this->documentManager->getRepository(Series::class)->findOneBy(['_id' => $seriesId]);
@@ -129,7 +129,7 @@ class APIService extends APICommonService
         return $mediaPackage->asXML();
     }
 
-    public function addDCCatalog(array $requestParameters, User $user = null)
+    public function addDCCatalog(array $requestParameters, ?User $user = null)
     {
         [$mediaPackage, $flavor, $body] = array_values($requestParameters);
 
@@ -199,7 +199,7 @@ class APIService extends APICommonService
         return $mediaPackage->asXML();
     }
 
-    public function addMediaPackage(array $requestParameters, User $user = null)
+    public function addMediaPackage(array $requestParameters, ?User $user = null)
     {
         [$flavor, $body, $seriesId, $accessRights, $title, $description, $profile, $priority, $language, $roles] = array_values($requestParameters);
 
@@ -268,7 +268,7 @@ class APIService extends APICommonService
         return $mediaPackage->asXML();
     }
 
-    protected function processMaterialFile(MultimediaObject $multimediaObject, $body, $materialMetadata, string $overriding = null): MultimediaObject
+    protected function processMaterialFile(MultimediaObject $multimediaObject, $body, $materialMetadata, ?string $overriding = null): MultimediaObject
     {
         if (!$overriding) {
             return $this->materialService->addMaterialFile($multimediaObject, $body, $materialMetadata);

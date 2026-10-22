@@ -8,11 +8,12 @@ use Doctrine\ODM\MongoDB\DocumentManager;
 use MongoDB\BSON\ObjectId;
 use Pumukit\CoreBundle\Tests\PumukitTestCase;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
+use Pumukit\SchemaBundle\Document\Role;
 use Pumukit\SchemaBundle\Document\Tag;
+use Pumukit\SchemaBundle\Document\User;
+use Pumukit\SchemaBundle\Services\PersonService;
 use Pumukit\SchemaBundle\Services\TagService;
-use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 /**
  * @internal
@@ -115,14 +116,26 @@ class APIUpdateControllerTest extends PumukitTestCase
     {
         self::ensureKernelShutdown();
         $client = static::createClient();
-        $container = static::$kernel->getContainer();
+        $dm = static::getContainer()->get('doctrine_mongodb')->getManager();
 
-        $token = new UsernamePasswordToken('tester', null, 'api', ['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API', 'ROLE_USER']);
-        $session = $container->get('session');
-        $session->set('_security_pumukit', serialize($token));
-        $session->save();
+        $personalScopeRoleCode = static::getContainer()->get(PersonService::class)->getPersonalScopeRoleCode();
+        if (!$dm->getRepository(Role::class)->findOneBy(['cod' => $personalScopeRoleCode])) {
+            $role = new Role();
+            $role->setCod($personalScopeRoleCode);
+            $dm->persist($role);
+        }
 
-        $client->getCookieJar()->set(new Cookie($session->getName(), $session->getId()));
+        $user = $dm->getRepository(User::class)->findOneBy(['username' => 'tester']);
+        if (!$user) {
+            $user = new User();
+            $user->setUsername('tester');
+            $user->setEmail('tester@pumukit.test');
+            $user->setRoles(['ROLE_ACCESS_INGEST_API', 'ROLE_ACCESS_API']);
+            $dm->persist($user);
+        }
+        $dm->flush();
+
+        $client->loginUser($user, 'pumukit');
 
         return $client;
     }
