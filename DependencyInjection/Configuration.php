@@ -16,9 +16,12 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
+            ->booleanNode('enable')
+            ->defaultTrue()
+            ->info('If false, the routes of the API are not loaded')
+            ->end()
             ->scalarNode('allowed_removed_tag')
             ->defaultValue('CUSTOM_TAG')
-            ->isRequired()
             ->info('Define which tag will be used to mark objects which can be subjected to tag removal')
             ->end()
         ;

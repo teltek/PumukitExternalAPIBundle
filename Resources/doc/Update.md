@@ -27,5 +27,5 @@ This is used when 3th party services have proprietary custom tags to tag videos 
 
 **Example curl:**  
 ```
-curl -X DELETE -i --basic -u admin:admin https://localhost:8000/app_dev.php/api/mmobjs/5c982e5339d98b25008b456a/tags/cod/CUSTOM_TAG
+curl -X DELETE -i --basic -u admin:admin https://localhost:8000/api/mmobjs/5c982e5339d98b25008b456a/tags/cod/CUSTOM_TAG
 ```
