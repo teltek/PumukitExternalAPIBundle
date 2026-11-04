@@ -93,8 +93,7 @@ class APIService extends APICommonService
 
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
-        $jobOptions = new JobOptions($profile, $priority, $language, $description);
-        $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $body, $jobOptions);
+        $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $body, $this->jobOptions($profile, $priority, $language, $description));
 
         $mediaPackage = $this->generateXML($multimediaObject);
 
@@ -238,25 +237,23 @@ class APIService extends APICommonService
         }
 
         if ($title) {
-            foreach ($multimediaObject->getI18nTitle() as $language => $value) {
-                $multimediaObject->setTitle($title, $language);
+            foreach (array_keys($multimediaObject->getI18nTitle()) as $locale) {
+                $multimediaObject->setTitle($title, $locale);
             }
         }
 
         if ($description) {
-            foreach ($multimediaObject->getI18nDescription() as $language => $value) {
-                $multimediaObject->setDescription($description, $language);
+            foreach (array_keys($multimediaObject->getI18nDescription()) as $locale) {
+                $multimediaObject->setDescription($description, $locale);
             }
         }
 
         if ($flavor && $body) {
-            $description = [''];
             if (!is_array($body)) {
                 $body = [$body];
             }
             foreach ($body as $track) {
-                $jobOptions = new JobOptions($profile, $priority, $language, $description);
-                $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $track, $jobOptions);
+                $multimediaObject = $this->jobCreator->fromUploadedFile($multimediaObject, $track, $this->jobOptions($profile, $priority, $language, $description));
             }
         }
 
@@ -280,5 +277,10 @@ class APIService extends APICommonService
         }
 
         return $this->materialService->updateMaterialFile($multimediaObject, $body, $material, $materialMetadata);
+    }
+
+    private function jobOptions(string $profile, int|string $priority, string $language, string $description): JobOptions
+    {
+        return new JobOptions($profile, (int) $priority, $language, '' === $description ? [] : $this->processSeriesTitle($description));
     }
 }

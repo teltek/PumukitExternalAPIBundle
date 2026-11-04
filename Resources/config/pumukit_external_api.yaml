@@ -16,6 +16,8 @@ services:
       $env: '%kernel.environment%'
     tags: ['routing.loader']
 
+  Pumukit\ExternalAPIBundle\Services\APIErrorResponse: ~
+
   Pumukit\ExternalAPIBundle\Services\APICommonService:
     class: Pumukit\ExternalAPIBundle\Services\APICommonService
 

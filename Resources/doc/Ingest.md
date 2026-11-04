@@ -124,7 +124,7 @@ The track file or files (this can be an array of tracks, each requiring one flav
 *accessRights:* Copyright field on the multimedia object.  
 *contributor:* Person name. Added with contributor role as a new person or an existing one if it already exists. Can be an array of names.  
 *creator:* Person name. Added with creator role as a new person or an existing one if it already exists. Can be an array of names.  
-*description:* Description field on the multimedia object.  
+*description:* Description field on the multimedia object and on its tracks.  
 *license:* License field on the multimedia object.  
 *publisher:* Person name. Added with publisher role as a new person or an existing one if it already exists. Can be an array of names.  
 *title:* Title field on the multimedia object.  

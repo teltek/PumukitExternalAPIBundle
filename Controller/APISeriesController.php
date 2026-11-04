@@ -26,7 +26,7 @@ class APISeriesController extends AbstractController
     #[Route('/', methods: ['POST'])]
     public function createAction(Request $request): ?Response
     {
-        $title = $request->request->get('title');
+        $title = $request->request->all()['title'] ?? null;
         $series = $this->APISeriesService->create($this->getUser(), $title);
 
         return new Response($series->getId());

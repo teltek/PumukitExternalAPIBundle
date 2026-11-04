@@ -60,7 +60,7 @@ class APIUpdateControllerTest extends PumukitTestCase
         self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', (string) new ObjectId(), self::ENDPOINT_REMOVE_TAG);
         $client->request('GET', $route);
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
     }
@@ -70,7 +70,7 @@ class APIUpdateControllerTest extends PumukitTestCase
         self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', (string) new ObjectId(), self::ENDPOINT_REMOVE_TAG);
         $client->request('POST', $route);
         $this->assertEquals(Response::HTTP_METHOD_NOT_ALLOWED, $client->getResponse()->getStatusCode());
     }
@@ -80,7 +80,7 @@ class APIUpdateControllerTest extends PumukitTestCase
         self::ensureKernelShutdown();
         $client = static::createClient();
 
-        $route = str_replace('RANDOMID', new ObjectId(), self::ENDPOINT_REMOVE_TAG);
+        $route = str_replace('RANDOMID', (string) new ObjectId(), self::ENDPOINT_REMOVE_TAG);
         $client->request('DELETE', $route);
         $this->assertEquals(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
     }

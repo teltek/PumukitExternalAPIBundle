@@ -6,6 +6,7 @@ namespace Pumukit\ExternalAPIBundle\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Pumukit\EncoderBundle\Services\ProfileService;
+use Pumukit\ExternalAPIBundle\Services\APIErrorResponse;
 use Pumukit\ExternalAPIBundle\Services\APIService;
 use Pumukit\SchemaBundle\Document\Role;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +22,7 @@ class IngestController extends AbstractController
     private $documentManager;
     private $APIService;
     private $profileService;
+    private $errorResponse;
     private $predefinedHeaders = [
         'Content-Type' => 'text/xml',
     ];
@@ -28,11 +30,13 @@ class IngestController extends AbstractController
     public function __construct(
         DocumentManager $documentManager,
         APIService $APIService,
-        ProfileService $profileService
+        ProfileService $profileService,
+        APIErrorResponse $errorResponse
     ) {
         $this->documentManager = $documentManager;
         $this->APIService = $APIService;
         $this->profileService = $profileService;
+        $this->errorResponse = $errorResponse;
     }
 
     #[Route('/createMediaPackage')]
@@ -49,7 +53,7 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
@@ -68,7 +72,7 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
@@ -89,7 +93,7 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
@@ -102,7 +106,7 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
@@ -120,14 +124,14 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
     #[Route('/addMediaPackage')]
     public function addMediaPackageAction(Request $request): ?Response
     {
-        $flavor = $request->request->get('flavor');
+        $flavor = $request->request->all()['flavor'] ?? null;
         if (!$flavor) {
             return new Response("No 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
@@ -137,7 +141,7 @@ class IngestController extends AbstractController
         }
 
         $requestParameters = [
-            'flavor' => $request->request->get('flavor'),
+            'flavor' => $flavor,
             'body' => $request->files->get('BODY'),
         ];
 
@@ -160,7 +164,7 @@ class IngestController extends AbstractController
 
             return $this->generateResponse($response, Response::HTTP_OK, $this->predefinedHeaders);
         } catch (\Exception $exception) {
-            return $this->generateResponse($exception->getMessage(), $exception->getCode(), $this->predefinedHeaders);
+            return $this->errorResponse->fromException($exception);
         }
     }
 
@@ -184,9 +188,10 @@ class IngestController extends AbstractController
     private function getPeopleFromRoles(Request $request, array $requestParameters): array
     {
         $roles = [];
+        $parameters = $request->request->all();
         foreach ($this->documentManager->getRepository(Role::class)->findAll() as $role) {
             $roleCode = $role->getCod();
-            $roles[$roleCode] = $request->request->get($roleCode);
+            $roles[$roleCode] = $parameters[$roleCode] ?? null;
         }
 
         $requestParameters['roles'] = $roles;
