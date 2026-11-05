@@ -7,6 +7,7 @@ namespace Pumukit\ExternalAPIBundle\Controller;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use MongoDB\BSON\ObjectId;
 use Psr\Log\LoggerInterface;
+use Pumukit\BasePlayerBundle\Services\TrackUrlService;
 use Pumukit\SchemaBundle\Document\MediaType\Track;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -32,11 +33,13 @@ class DownloadController extends AbstractController
 {
     private $documentManager;
     private $logger;
+    private $trackUrlService;
 
-    public function __construct(DocumentManager $documentManager, LoggerInterface $logger)
+    public function __construct(DocumentManager $documentManager, LoggerInterface $logger, TrackUrlService $trackUrlService)
     {
         $this->documentManager = $documentManager;
         $this->logger = $logger;
+        $this->trackUrlService = $trackUrlService;
     }
 
     #[Route('/api/ingest/getDownloadTrack/{trackId}', name: 'pumukit_external_api_download_track', methods: ['GET'], requirements: ['trackId' => '[0-9a-fA-F]{24}'])]
@@ -58,7 +61,7 @@ class DownloadController extends AbstractController
             }
 
             if (null !== $externalUrl && '' !== $externalUrl) {
-                return new RedirectResponse($externalUrl);
+                return new RedirectResponse($this->trackUrlService->signForDownloadServer($externalUrl));
             }
         }
 
