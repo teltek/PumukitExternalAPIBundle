@@ -13,7 +13,7 @@ pumukit_external_api:
     allowed_removed_tag: CUSTOM_TAG
 ```
 
-- `enable`: with `false` the routes of the API are not loaded (404) and its permission is not offered. Default `true`.
+- `enable`: if false, the routes of the API give 404, its permission is not offered and nothing else of the bundle is loaded. Default `true`.
 - `allowed_removed_tag`: the only tag that `DELETE /api/mmobjs/{id}/tags/cod/{cod}` can remove. Default `CUSTOM_TAG`.
 
 ## Permissions

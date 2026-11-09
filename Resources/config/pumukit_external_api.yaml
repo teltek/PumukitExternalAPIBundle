@@ -10,12 +10,6 @@ services:
     resource: '../../Controller'
     tags: ['controller.service_arguments']
 
-  Pumukit\ExternalAPIBundle\Routing\RouteLoader:
-    arguments:
-      $enabled: '%pumukit_external_api.enable%'
-      $env: '%kernel.environment%'
-    tags: ['routing.loader']
-
   Pumukit\ExternalAPIBundle\Services\APIErrorResponse: ~
 
   Pumukit\ExternalAPIBundle\Services\APICommonService:

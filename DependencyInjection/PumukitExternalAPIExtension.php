@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Pumukit\ExternalAPIBundle\DependencyInjection;
 
+use Pumukit\ExternalAPIBundle\Routing\RouteLoader;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -19,12 +20,17 @@ class PumukitExternalAPIExtension extends Extension
         $container->setParameter('pumukit_external_api.enable', $config['enable']);
         $container->setParameter('pumukit_external_api.allowed_removed_tag', $config['allowed_removed_tag']);
 
-        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
-        $loader->load('pumukit_external_api.yaml');
+        $container->register(RouteLoader::class)
+            ->setArguments([$config['enable'], '%kernel.environment%'])
+            ->addTag('routing.loader')
+        ;
 
         if (!$config['enable']) {
             return;
         }
+
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader->load('pumukit_external_api.yaml');
 
         $permissions = [['role' => 'ROLE_ACCESS_INGEST_API', 'description' => 'Access the Ingest API']];
         $newPermissions = array_merge($container->getParameter('pumukitschema.external_permissions'), $permissions);

@@ -18,7 +18,7 @@ class Configuration implements ConfigurationInterface
             ->children()
             ->booleanNode('enable')
             ->defaultTrue()
-            ->info('If false, the routes of the API are not loaded')
+            ->info('If false, the routes of the API give 404, its permission is not offered and nothing else of the bundle is loaded')
             ->end()
             ->scalarNode('allowed_removed_tag')
             ->defaultValue('CUSTOM_TAG')
