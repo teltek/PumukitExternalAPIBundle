@@ -19,11 +19,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Direct media download by track id, used by the external transcription system.
+ * Direct media download by track id.
  *
- * Replaces the old "/trackfile/{id}" link, which in PuMuKIT 5.1 requires the
- * "play" permission and a player token, and therefore blocks the download of
- * non-public videos. Here the only requirement is the Ingest API credentials:
+ * The "/trackfile/{id}" link requires the "play" permission and a player token,
+ * and therefore blocks the download of non-public videos. Here the only
+ * requirement is the Ingest API credentials:
  * any track can be downloaded regardless of the publication status of its
  * multimedia object. The caller already knows the track id (it picks it from
  * the mmobj listing), so no track selection is done here.

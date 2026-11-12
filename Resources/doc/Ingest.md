@@ -34,7 +34,7 @@ Creates an empty multimedia object and returns a mediaPackage formatted XML.
 
 **Example curl:**  
 ```
-curl -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/ingest/createMediaPackage -F 'seriesTitle="seriesTitle"'
+curl -X POST -f -i --basic -u api-user:api-password https://pumukit.example.org/api/ingest/createMediaPackage -F 'seriesTitle="seriesTitle"'
 ```
 
 # POST /addAttachment
@@ -184,7 +184,7 @@ curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/add
 **Description:**  
 Downloads the media file of a single track, identified directly by its track id. When the track is stored on an external system it answers with a `302` redirect to the real (time-limited) file URL; otherwise the file is streamed back. Access is granted by the Ingest API credentials only, bypassing the `play` permission, so videos can be downloaded regardless of their publication status.
 
-This replaces the old `/trackfile/{trackId}.mp4` link, which stopped working when video download security was hardened in PuMuKIT 5.1 (it now requires a player token and the `play` permission). The caller already knows the track id (it is taken from the `mmobj.json` listing, e.g. the first track tagged `etiqmedia`), so no track is selected here.
+The `/trackfile/{trackId}.mp4` link requires a player token and the `play` permission, so it cannot be used to download non-public videos. The caller already knows the track id (it is taken from the `mmobj.json` listing), so no track is selected here.
 
 **Path parameters:**  
 *trackId:* The id of the track to download (24 hex chars).
@@ -199,7 +199,7 @@ The media file (binary) or a `302` redirect to it.
 
 **Example curl:**  
 ```
-# Replaces:  curl -L https://domain.es/trackfile/5dca96b2f9556400433440a2.mp4 --output video.mp4
+# Instead of:  curl -L https://pumukit.example.org/trackfile/5dca96b2f9556400433440a2.mp4 --output video.mp4
 curl -L --basic -u api-user:api-password \
-https://domain.es/api/ingest/getDownloadTrack/5dca96b2f9556400433440a2 --output video.mp4
+https://pumukit.example.org/api/ingest/getDownloadTrack/5dca96b2f9556400433440a2 --output video.mp4
 ```

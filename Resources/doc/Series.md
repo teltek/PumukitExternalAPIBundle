@@ -33,15 +33,15 @@ It is possible, although not recommended, to add languages that aren't enabled o
 **Examples curl:**  
 Series with default title:
 ```
-curl -k -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/series
+curl -k -X POST -f -i --basic -u api-user:api-password https://pumukit.example.org/api/series
 ```
 
 Series with same custom title for all languages:
 ```
-curl -k -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/series -F "title=New custom title"
+curl -k -X POST -f -i --basic -u api-user:api-password https://pumukit.example.org/api/series -F "title=New custom title"
 ```
 
 Series with different custom titles for each language:
 ```
-curl -k -X POST -f -i --basic -u api-user:api-password https://gcms-local.teltek.es/api/series -F "title[en]=EN TITLE" -F "title[es]=ES TITLE"
+curl -k -X POST -f -i --basic -u api-user:api-password https://pumukit.example.org/api/series -F "title[en]=EN TITLE" -F "title[es]=ES TITLE"
 ```
