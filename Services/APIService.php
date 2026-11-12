@@ -107,14 +107,11 @@ class APIService extends APICommonService
         $multimediaObject = $this->getMultimediaObjectFromMediapackageXML($mediaPackage);
 
         if (self::PUMUKIT_EPISODE === $flavor) {
+            $content = file_get_contents($body->getPathname());
             if (in_array($body->getMimeType(), ['application/xml', 'text/xml'])) {
-                try {
-                    $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
-                } catch (\Exception $e) {
-                    throw new \Exception($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-                }
+                $body = $this->loadXml($content, 'The catalog is not a valid XML document');
             } else {
-                $body = json_decode(file_get_contents($body), true);
+                $body = json_decode($content, true);
                 if (JSON_ERROR_NONE !== json_last_error()) {
                     throw new \Exception(json_last_error_msg(), Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
@@ -138,13 +135,7 @@ class APIService extends APICommonService
             throw new \Exception("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
-        $previousUseErrors = libxml_use_internal_errors(true);
-        $body = simplexml_load_string(file_get_contents($body instanceof UploadedFile ? $body->getPathname() : $body), 'SimpleXMLElement', LIBXML_NOCDATA);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previousUseErrors);
-        if (false === $body) {
-            throw new \Exception('The catalog is not a valid XML document', Response::HTTP_BAD_REQUEST);
-        }
+        $body = $this->loadXml(file_get_contents($body instanceof UploadedFile ? $body->getPathname() : $body), 'The catalog is not a valid XML document');
 
         $namespacesMetadata = $body->getNamespaces(true);
         $bodyDcterms = $body->children($namespacesMetadata['dcterms']);

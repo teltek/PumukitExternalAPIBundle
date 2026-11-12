@@ -54,11 +54,7 @@ class APICommonService
 
     protected function getMultimediaObjectFromMediaPackageXML(string $mediaPackage): MultimediaObject
     {
-        try {
-            $mediaPackage = simplexml_load_string($mediaPackage, 'SimpleXMLElement', LIBXML_NOCDATA);
-        } catch (\Exception $e) {
-            throw new \Exception($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        $mediaPackage = $this->loadXml($mediaPackage, 'The media package is not a valid XML document');
 
         $multimediaObject = $this->documentManager->getRepository(MultimediaObject::class)->findOneBy([
             '_id' => (string) $mediaPackage['id'],
@@ -97,5 +93,19 @@ class APICommonService
     protected function multimediaObjectDispatchUpdate(MultimediaObject $multimediaObject): void
     {
         $this->multimediaObjectEventDispatcherService->dispatchUpdate($multimediaObject);
+    }
+
+    protected function loadXml(string $xml, string $message): \SimpleXMLElement
+    {
+        $previousUseErrors = libxml_use_internal_errors(true);
+        $element = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousUseErrors);
+
+        if (false === $element) {
+            throw new \Exception($message, Response::HTTP_BAD_REQUEST);
+        }
+
+        return $element;
     }
 }

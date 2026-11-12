@@ -524,6 +524,40 @@ class IngestControllerTest extends PumukitTestCase
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
     }
 
+    public function testAMediaPackageThatIsNotValidXmlIsABadRequest(): void
+    {
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', '/api/ingest/addAttachment', ['mediaPackage' => '<mediapackage', 'flavor' => 'captions/vtt'], ['BODY' => $this->generateSubtitleFile()], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+    }
+
+    public function testAnEpisodeCatalogThatIsNotValidXmlIsABadRequest(): void
+    {
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
+        $mediaPackage = $client->getResponse()->getContent();
+
+        $episode = sys_get_temp_dir().'/episode.xml';
+        file_put_contents($episode, '<?xml version="1.0"?><episode><title>');
+        $client->request('POST', '/api/ingest/addCatalog', ['mediaPackage' => $mediaPackage, 'flavor' => 'pumukit/episode'], ['BODY' => new UploadedFile($episode, 'episode.xml')], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+    }
+
+    public function testAValidEpisodeCatalogIsAdded(): void
+    {
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
+        $mediaPackage = $client->getResponse()->getContent();
+
+        $episode = sys_get_temp_dir().'/episode.json';
+        file_put_contents($episode, '{}');
+        $client->request('POST', '/api/ingest/addCatalog', ['mediaPackage' => $mediaPackage, 'flavor' => 'pumukit/episode'], ['BODY' => new UploadedFile($episode, 'episode.json')], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        $this->assertEquals(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+    }
+
     public function testARejectedFileAnswersWithItsMessage(): void
     {
         $client = $this->createAuthorizedClient();
