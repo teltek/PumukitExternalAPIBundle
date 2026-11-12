@@ -113,7 +113,7 @@ class APIService extends APICommonService
             } else {
                 $body = json_decode($content, true);
                 if (JSON_ERROR_NONE !== json_last_error()) {
-                    throw new \Exception(json_last_error_msg(), Response::HTTP_INTERNAL_SERVER_ERROR);
+                    throw new \Exception('The catalog is not a valid JSON document', Response::HTTP_BAD_REQUEST);
                 }
             }
 

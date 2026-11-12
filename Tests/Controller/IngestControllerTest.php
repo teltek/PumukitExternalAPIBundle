@@ -545,6 +545,19 @@ class IngestControllerTest extends PumukitTestCase
         $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
     }
 
+    public function testAnEpisodeCatalogThatIsNotValidJsonIsABadRequest(): void
+    {
+        $client = $this->createAuthorizedClient();
+        $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
+        $mediaPackage = $client->getResponse()->getContent();
+
+        $episode = sys_get_temp_dir().'/episode.json';
+        file_put_contents($episode, '{"title":');
+        $client->request('POST', '/api/ingest/addCatalog', ['mediaPackage' => $mediaPackage, 'flavor' => 'pumukit/episode'], ['BODY' => new UploadedFile($episode, 'episode.json')], ['CONTENT_TYPE' => 'multipart/form-data']);
+
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
+    }
+
     public function testAValidEpisodeCatalogIsAdded(): void
     {
         $client = $this->createAuthorizedClient();
