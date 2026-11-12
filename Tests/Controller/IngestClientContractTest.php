@@ -99,6 +99,7 @@ class IngestClientContractTest extends PumukitTestCase
         $user->setUsername($username);
         $user->setEmail($username.'@pumukit.test');
         $user->setRoles($roles);
+        $user->setEnabled(true);
         $user->setPassword(static::getContainer()->get('security.user_password_hasher')->hashPassword($user, self::PASSWORD));
 
         $role = new Role();

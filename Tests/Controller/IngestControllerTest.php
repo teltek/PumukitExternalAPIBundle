@@ -530,8 +530,9 @@ class IngestControllerTest extends PumukitTestCase
         $client->request('POST', self::ENDPOINT_CREATE_MEDIA_PACKAGE);
         $postParams = ['mediaPackage' => $client->getResponse()->getContent(), 'flavor' => 'presenter/source'];
 
-        copy(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4', 'upload.php');
-        $client->request('POST', '/api/ingest/addTrack', $postParams, ['BODY' => new UploadedFile('upload.php', 'upload.php')], ['CONTENT_TYPE' => 'multipart/form-data']);
+        $uploadFile = sys_get_temp_dir().'/upload.php';
+        copy(__DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/presenter.mp4', $uploadFile);
+        $client->request('POST', '/api/ingest/addTrack', $postParams, ['BODY' => new UploadedFile($uploadFile, 'upload.php')], ['CONTENT_TYPE' => 'multipart/form-data']);
 
         $this->assertEquals(Response::HTTP_INTERNAL_SERVER_ERROR, $client->getResponse()->getStatusCode());
         $this->assertStringContainsString('is not allowed', $client->getResponse()->getContent());
@@ -567,10 +568,10 @@ class IngestControllerTest extends PumukitTestCase
 
     protected function generateSubtitleFile(): UploadedFile
     {
-        $localFile = 'subtitles.srt';
+        $localFile = sys_get_temp_dir().'/subtitles.srt';
         $fp = fopen($localFile, 'wb');
         fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\nour final approach into Coruscant.");
-        $subtitleFile = new UploadedFile($localFile, $localFile);
+        $subtitleFile = new UploadedFile($localFile, 'subtitles.srt');
         fclose($fp);
 
         return $subtitleFile;
@@ -578,10 +579,10 @@ class IngestControllerTest extends PumukitTestCase
 
     protected function generateOverridingSubtitleFile(): UploadedFile
     {
-        $localFile = 'subtitles2.srt';
+        $localFile = sys_get_temp_dir().'/subtitles2.srt';
         $fp = fopen($localFile, 'wb');
         fwrite($fp, "1\n00:02:17,440 --> 00:02:20,375\n Senator, we're making\n our final approach into Coruscant.");
-        $subtitleFile = new UploadedFile($localFile, $localFile);
+        $subtitleFile = new UploadedFile($localFile, 'subtitles2.srt');
         fclose($fp);
 
         return $subtitleFile;
@@ -591,6 +592,7 @@ class IngestControllerTest extends PumukitTestCase
     {
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
         $localFile = 'presenter.mp4';
+        $uploadFile = sys_get_temp_dir().'/'.$uploadFile;
         copy($filesDir.$localFile, $uploadFile);
 
         return new UploadedFile($uploadFile, $localFile);
@@ -599,7 +601,7 @@ class IngestControllerTest extends PumukitTestCase
     protected function getUploadFile(string $localFile): UploadedFile
     {
         $filesDir = __DIR__.'/../../Resources/data/Tests/Controller/IngestControllerTest/';
-        $uploadFile = 'upload.xml';
+        $uploadFile = sys_get_temp_dir().'/upload.xml';
         copy($filesDir.$localFile, $uploadFile);
 
         return new UploadedFile($uploadFile, $localFile);
