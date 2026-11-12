@@ -138,10 +138,12 @@ class APIService extends APICommonService
             throw new \Exception("Only 'dublincore' catalogs 'flavor' parameter", Response::HTTP_BAD_REQUEST);
         }
 
-        if ($body instanceof UploadedFile) {
-            $body = simplexml_load_string(file_get_contents($body->getPathname()), 'SimpleXMLElement', LIBXML_NOCDATA);
-        } else {
-            $body = simplexml_load_string(file_get_contents($body), 'SimpleXMLElement', LIBXML_NOCDATA);
+        $previousUseErrors = libxml_use_internal_errors(true);
+        $body = simplexml_load_string(file_get_contents($body instanceof UploadedFile ? $body->getPathname() : $body), 'SimpleXMLElement', LIBXML_NOCDATA);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousUseErrors);
+        if (false === $body) {
+            throw new \Exception('The catalog is not a valid XML document', Response::HTTP_BAD_REQUEST);
         }
 
         $namespacesMetadata = $body->getNamespaces(true);

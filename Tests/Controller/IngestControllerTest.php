@@ -247,7 +247,7 @@ class IngestControllerTest extends PumukitTestCase
         ];
         $badFile = $this->generateSubtitleFile();
         $client->request('POST', '/api/ingest/addDCCatalog', $postParams, ['BODY' => $badFile], ['CONTENT_TYPE' => 'multipart/form-data']);
-        $this->assertEquals(500, $client->getResponse()->getStatusCode());
+        $this->assertEquals(Response::HTTP_BAD_REQUEST, $client->getResponse()->getStatusCode());
 
         // Add series catalog (creates new series);
         $multimediaObject = $this->dm->getRepository(MultimediaObject::class)->findOneBy(['_id' => (string) $mediaPackage['id']]);
