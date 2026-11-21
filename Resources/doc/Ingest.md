@@ -182,7 +182,7 @@ curl -X POST -i --basic -u api-user:api-password http://localhost/api/ingest/add
 
 # GET /getDownloadTrack/{trackId}
 **Description:**  
-Downloads the media file of a single track, identified directly by its track id. When the track is stored on an external system it answers with a `302` redirect to the real (time-limited) file URL; otherwise the file is streamed back. Access is granted by the Ingest API credentials only, bypassing the `play` permission, so videos can be downloaded regardless of their publication status.
+Downloads the media file of a single track, identified directly by its track id. PHP never sends the file: it answers a `302` redirect to a signed, time-limited URL of the download server of PuMuKIT (`PUMUKIT_DOWNLOAD_SERVER_URL`), as a download, or to the URL of a track stored on an external system. The client must follow redirects (`curl -L`) and reach the host of the download server. Access is granted by the Ingest API credentials only, bypassing the `play` permission, so videos can be downloaded regardless of their publication status.
 
 The `/trackfile/{trackId}.mp4` link requires a player token and the `play` permission, so it cannot be used to download non-public videos. The caller already knows the track id (it is taken from the `mmobj.json` listing), so no track is selected here.
 
@@ -190,12 +190,12 @@ The `/trackfile/{trackId}.mp4` link requires a player token and the `play` permi
 *trackId:* The id of the track to download (24 hex chars).
 
 **Response formats:**  
-The media file (binary) or a `302` redirect to it.
+A `302` redirect to the media file.
 
 **Status codes:**  
-*200:* OK, the media file is returned.  
-*302:* Found, redirect to the external file URL.  
-*404:* Not Found, the track does not exist or the file is missing on disk.
+*302:* Found, redirect to the signed file URL of the download server or to the external file URL.  
+*404:* Not Found, the track does not exist or the file is missing on disk.  
+*503:* Service Unavailable, the download server cannot serve the file (no download server configured, a file outside the storage or an HLS track in a shared directory).
 
 **Example curl:**  
 ```
