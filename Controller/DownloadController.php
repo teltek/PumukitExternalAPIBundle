@@ -6,15 +6,11 @@ namespace Pumukit\ExternalAPIBundle\Controller;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
 use MongoDB\BSON\ObjectId;
-use Psr\Log\LoggerInterface;
-use Pumukit\BasePlayerBundle\Services\TrackUrlService;
+use Pumukit\BasePlayerBundle\Services\TrackDeliveryService;
 use Pumukit\SchemaBundle\Document\MediaType\Track;
 use Pumukit\SchemaBundle\Document\MultimediaObject;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -32,14 +28,12 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class DownloadController extends AbstractController
 {
     private $documentManager;
-    private $logger;
-    private $trackUrlService;
+    private $trackDeliveryService;
 
-    public function __construct(DocumentManager $documentManager, LoggerInterface $logger, TrackUrlService $trackUrlService)
+    public function __construct(DocumentManager $documentManager, TrackDeliveryService $trackDeliveryService)
     {
         $this->documentManager = $documentManager;
-        $this->logger = $logger;
-        $this->trackUrlService = $trackUrlService;
+        $this->trackDeliveryService = $trackDeliveryService;
     }
 
     #[Route('/api/ingest/getDownloadTrack/{trackId}', name: 'pumukit_external_api_download_track', methods: ['GET'], requirements: ['trackId' => '[0-9a-fA-F]{24}'])]
@@ -49,43 +43,9 @@ class DownloadController extends AbstractController
         if (null === $found) {
             return new Response('Track not found', Response::HTTP_NOT_FOUND);
         }
-        [$multimediaObject, $track] = $found;
+        [, $track] = $found;
 
-        $storage = $track->storage();
-
-        if (!$storage->isLocalStorageSystem()) {
-            try {
-                $externalUrl = $storage->url()->url();
-            } catch (\Throwable) {
-                $externalUrl = null;
-            }
-
-            if (null !== $externalUrl && '' !== $externalUrl) {
-                return new RedirectResponse($this->trackUrlService->signForDownloadServer($externalUrl));
-            }
-        }
-
-        try {
-            $filePath = $storage->path()->path();
-        } catch (\Throwable) {
-            $filePath = null;
-        }
-
-        if (null === $filePath || !is_file($filePath)) {
-            $this->logger->error(sprintf(
-                '[external-api][download] file not found on disk for track %s of mmobj %s',
-                $trackId,
-                $multimediaObject->getId()
-            ));
-
-            return new Response('File not found', Response::HTTP_NOT_FOUND);
-        }
-
-        $response = new BinaryFileResponse($filePath);
-        BinaryFileResponse::trustXSendfileTypeHeader();
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT);
-
-        return $response;
+        return $this->trackDeliveryService->response($track, true);
     }
 
     /**
