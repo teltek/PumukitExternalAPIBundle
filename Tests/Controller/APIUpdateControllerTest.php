@@ -46,7 +46,6 @@ class APIUpdateControllerTest extends PumukitTestCase
     public function tearDown(): void
     {
         parent::tearDown();
-        $this->documentManager = null;
         gc_collect_cycles();
     }
 

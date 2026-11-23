@@ -36,7 +36,7 @@ class IngestClientContractTest extends PumukitTestCase
         $headers = $this->basicAuth($user);
 
         $client->request('GET', self::LIST_URL, [], [], $headers);
-        $this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
         $this->assertStringContainsString($id, $client->getResponse()->getContent());
 
         $vtt = tempnam(sys_get_temp_dir(), 'vtt');
@@ -47,10 +47,10 @@ class IngestClientContractTest extends PumukitTestCase
             'language' => 'es',
         ];
         $client->request('POST', '/api/ingest/addAttachment', $parameters, ['BODY' => new UploadedFile($vtt, 'caption.vtt')], $headers + ['CONTENT_TYPE' => 'multipart/form-data']);
-        $this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
 
         $client->request('DELETE', sprintf('/api/mmobjs/%s/tags/cod/CUSTOM_TAG', $id), [], [], $headers);
-        $this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
 
         $documentManager = $this->documentManager();
         $documentManager->clear();
@@ -66,10 +66,10 @@ class IngestClientContractTest extends PumukitTestCase
         $user = $this->user('ingest-only', ['ROLE_SCOPE_GLOBAL', 'ROLE_ACCESS_INGEST_API']);
 
         $client->request('GET', self::LIST_URL, [], [], $this->basicAuth($user));
-        $this->assertSame(Response::HTTP_FORBIDDEN, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
 
         $client->request('POST', '/api/ingest/createMediaPackage', [], [], $this->basicAuth($user));
-        $this->assertSame(Response::HTTP_OK, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
     }
 
     public function testAWrongPasswordIsRejected(): void
@@ -78,7 +78,7 @@ class IngestClientContractTest extends PumukitTestCase
         $user = $this->user('ingest-client', ['ROLE_ACCESS_API', 'ROLE_ACCESS_INGEST_API']);
 
         $client->request('POST', '/api/ingest/createMediaPackage', [], [], ['PHP_AUTH_USER' => $user->getUsername(), 'PHP_AUTH_PW' => 'wrong']);
-        $this->assertSame(Response::HTTP_UNAUTHORIZED, $client->getResponse()->getStatusCode());
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
     private function client(): KernelBrowser
